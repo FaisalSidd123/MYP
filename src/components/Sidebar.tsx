@@ -14,7 +14,7 @@ export default function Sidebar() {
           </div>
        </div>
        <nav className="flex-1 space-y-1">
-          <Link className="flex items-center gap-3 px-4 py-3 text-[#dfe4fe] bg-[#171f36] rounded-xl font-semibold transition-all duration-300 scale-102 active:scale-98" href="/">
+          <Link className="flex items-center gap-3 px-4 py-3 text-[#dfe4fe] bg-[#171f36] rounded-xl font-semibold transition-all duration-300 scale-102 active:scale-98" href="/dashboard">
             <span className="material-symbols-outlined">dashboard</span>
             <span>Dashboard</span>
           </Link>

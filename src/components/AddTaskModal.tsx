@@ -16,10 +16,11 @@ export default function AddTaskModal({ isOpen, onClose, onSuccess }: { isOpen: b
     if (!user) return;
     setLoading(true);
     try {
+      const token = await user.getIdToken();
       const res = await fetch('/api/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, user_id: user.uid })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ ...formData })
       });
       if (res.ok) {
         if (onSuccess) onSuccess();
@@ -76,7 +77,6 @@ export default function AddTaskModal({ isOpen, onClose, onSuccess }: { isOpen: b
               <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Status</label>
               <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 appearance-none hover:cursor-pointer">
                 <option value="pending">Pending</option>
-                <option value="review">In Review</option>
                 <option value="approved">Approved</option>
                 <option value="completed">Completed</option>
               </select>

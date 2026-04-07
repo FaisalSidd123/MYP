@@ -25,7 +25,7 @@ export default function RegisterPage() {
         await updateProfile(userCredential.user, {
           displayName: `${firstName} ${lastName}`.trim()
         });
-        router.push('/contacts');
+        router.push('/dashboard');
       } else {
         setError('Firebase not initialized. Check your .env parameters.');
       }
@@ -43,7 +43,7 @@ export default function RegisterPage() {
       if (auth) {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
-        router.push('/contacts');
+        router.push('/dashboard');
       } else {
         setError('Firebase not initialized. Check your .env parameters.');
       }

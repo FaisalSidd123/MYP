@@ -25,7 +25,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => setLoading(false), 0);
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          const res = await fetch('/api/users/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+              id: user.uid,
+              email: user.email,
+              display_name: user.displayName,
+              avatar_url: user.photoURL
+            })
+          });
+          if (res.status === 403) {
+            const data = await res.json();
+            if (data.code === 'mfa_required' && window.location.pathname !== '/mfa/verify') {
+              window.location.href = '/mfa/verify';
+              return;
+            }
+          } else if (res.ok) {
+            const userData = await res.json();
+            // Force Setup if MFA is completely disabled for this user
+            if (userData && userData.mfa_enabled === false && window.location.pathname !== '/mfa/setup') {
+              window.location.href = '/mfa/setup';
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Failed to sync user to Supabase:", err);
+        }
+      }
       setUser(user);
       setLoading(false);
     });
