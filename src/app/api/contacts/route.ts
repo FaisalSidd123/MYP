@@ -7,19 +7,30 @@ export async function GET(request: Request) {
   const { uid: userId, error: authError } = await verifyAuth(request);
   if (authError) return authError;
 
+  const url = new URL(request.url);
+  const nicheId = url.searchParams.get('niche_id');
+  const nicheName = url.searchParams.get('niche');
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('clients')
     .select('*')
     .eq('user_id', userId)
-    .order('name', { ascending: true });
+    .order('created_at', { ascending: false });
+
+  if (nicheId && nicheId !== 'all') {
+    query = query.eq('niche_id', nicheId);
+  } else if (nicheName && nicheName !== 'all') {
+    query = query.eq('niche_name', nicheName);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[/api/contacts GET Error]:', error.message, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data || []);
 }
 
 export async function POST(request: Request) {
@@ -28,37 +39,69 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, email, phone, company, source, status, pitch, pitch_notes, avatar_url } = body;
+    const {
+      name,
+      email,
+      phone,
+      company,
+      source,
+      status,
+      niche_id,
+      niche_name,
+      deal_value,
+      lead_score,
+      pitch,
+      pitch_notes,
+      avatar_url
+    } = body;
     const user_id = authUserId;
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Missing required field: name' }, { status: 400 });
+    }
+
+    // Resolve niche_name if niche_id provided
+    let resolvedNicheName = niche_name;
+    if (niche_id && !resolvedNicheName) {
+      const { data: nicheData } = await supabase
+        .from('niches')
+        .select('name')
+        .eq('id', niche_id)
+        .single();
+      if (nicheData) {
+        resolvedNicheName = nicheData.name;
+      }
     }
 
     const { data, error } = await supabase
       .from('clients')
       .insert([{
         user_id,
-        name,
-        email,
-        phone,
-        company,
-        source,
+        name: name.trim(),
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        company: company?.trim() || null,
+        source: source?.trim() || 'Direct Inbound',
         status: status || 'new',
+        niche_id: niche_id || null,
+        niche_name: resolvedNicheName || null,
+        deal_value: Number(deal_value) || 0,
+        lead_score: Number(lead_score) || 50,
         pitch: pitch || [],
-        pitch_notes,
-        avatar_url
+        pitch_notes: pitch_notes || null,
+        avatar_url: avatar_url || null
       }])
       .select()
       .single();
 
     if (error) {
+      console.error('[/api/contacts POST Error]:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -69,81 +112,101 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, name, email, phone, company, source, status, pitch, pitch_notes, avatar_url } = body;
+    const {
+      id,
+      name,
+      email,
+      phone,
+      company,
+      source,
+      status,
+      niche_id,
+      niche_name,
+      deal_value,
+      lead_score,
+      pitch,
+      pitch_notes,
+      avatar_url
+    } = body;
     const user_id = authUserId;
 
     if (!id) {
       return NextResponse.json({ error: 'Missing required field: id' }, { status: 400 });
     }
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    // Resolve niche_name if niche_id provided
+    let resolvedNicheName = niche_name;
+    if (niche_id && !resolvedNicheName) {
+      const { data: nicheData } = await supabase
+        .from('niches')
+        .select('name')
+        .eq('id', niche_id)
+        .single();
+      if (nicheData) {
+        resolvedNicheName = nicheData.name;
+      }
     }
 
     const { data, error } = await supabase
       .from('clients')
       .update({
-        name,
-        email,
-        phone,
-        company,
-        source,
+        name: name.trim(),
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        company: company?.trim() || null,
+        source: source?.trim() || null,
         status,
+        niche_id: niche_id || null,
+        niche_name: resolvedNicheName || null,
+        deal_value: Number(deal_value) || 0,
+        lead_score: Number(lead_score) || 50,
         pitch: pitch || [],
         pitch_notes,
         avatar_url,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
-      .eq('user_id', user_id) // Ensure user can only update their own contacts
+      .eq('user_id', user_id)
       .select()
       .single();
 
     if (error) {
+      console.error('[/api/contacts PUT Error]:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data) {
-      return NextResponse.json({ error: 'Contact not found or unauthorized' }, { status: 404 });
     }
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
 
-// DELETE - Remove a contact
+// DELETE - Delete a contact
 export async function DELETE(request: Request) {
-  const { uid: userId, error: authError } = await verifyAuth(request);
+  const { uid: authUserId, error: authError } = await verifyAuth(request);
   if (authError) return authError;
 
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json({ error: 'Missing required param: id' }, { status: 400 });
-    }
+  if (!id) {
+    return NextResponse.json({ error: 'Missing contact id' }, { status: 400 });
+  }
 
-    const { data, error } = await supabase
-      .from('clients')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', userId) // Ensure user can only delete their own contacts
-      .select()
-      .single();
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', authUserId);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data) {
-      return NextResponse.json({ error: 'Contact not found or unauthorized' }, { status: 404 });
-    }
-
-    return NextResponse.json({ message: 'Contact deleted successfully', id });
-  } catch (error: any) {
+  if (error) {
+    console.error('[/api/contacts DELETE Error]:', error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  return NextResponse.json({ success: true, message: 'Contact deleted successfully' });
 }

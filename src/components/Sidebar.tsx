@@ -9,9 +9,10 @@ export default function Sidebar() {
 
   const navLinks = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
-    { label: "Contacts", href: "/contacts", icon: "group" },
+    { label: "Contacts & Leads", href: "/contacts", icon: "group" },
+    { label: "Niche Verticals", href: "/niches", icon: "category" },
     { label: "Schedule", href: "/schedule", icon: "calendar_today" },
-    { label: "Tasks", href: "/tasks", icon: "fact_check" },
+    { label: "Tasks Board", href: "/tasks", icon: "fact_check" },
   ];
 
   return (

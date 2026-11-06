@@ -45,14 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               window.location.href = '/mfa/verify';
               return;
             }
-          } else if (res.ok) {
-            const userData = await res.json();
-            // Force Setup if MFA is completely disabled for this user
-            if (userData && userData.mfa_enabled === false && window.location.pathname !== '/mfa/setup') {
-              window.location.href = '/mfa/setup';
-              return;
-            }
           }
+          // Note: MFA is optional. Users with mfa_enabled === false are NOT forced to setup MFA.
         } catch (err) {
           console.error("Failed to sync user to Supabase:", err);
         }
