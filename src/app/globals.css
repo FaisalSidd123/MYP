@@ -1,80 +1,160 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-on-secondary: #120076;
-  --color-secondary-fixed-dim: #c0bdff;
-  --color-primary-dim: #6063ee;
-  --color-tertiary-fixed: #ff8ed2;
-  --color-primary: #a3a6ff;
-  --color-surface-variant: #1c253e;
-  --color-surface-container-lowest: #000000;
-  --color-on-tertiary-container: #63054a;
-  --color-error-dim: #d73357;
-  --color-inverse-primary: #494bd7;
-  --color-on-error-container: #ffb2b9;
-  --color-surface-dim: #070d1f;
-  --color-secondary: #9492ff;
-  --color-secondary-fixed: #cfcdff;
-  --color-inverse-on-surface: #4f5469;
-  --color-background: #070d1f;
-  --color-on-background: #dfe4fe;
-  --color-on-primary: #0f00a4;
-  --color-on-secondary-fixed-variant: #3e32d5;
-  --color-tertiary: #ffa5d9;
-  --color-on-tertiary-fixed: #3b002b;
-  --color-surface-container-low: #0c1326;
-  --color-secondary-container: #3323cc;
-  --color-surface-bright: #222b47;
-  --color-on-primary-fixed: #000000;
-  --color-tertiary-container: #ff8ed2;
-  --color-primary-fixed-dim: #8387ff;
-  --color-on-error: #490013;
-  --color-inverse-surface: #faf8ff;
-  --color-primary-container: #9396ff;
-  --color-surface-container-high: #171f36;
-  --color-tertiary-fixed-dim: #ef81c4;
-  --color-on-tertiary: #701455;
-  --color-surface: #070d1f;
-  --color-on-surface: #dfe4fe;
-  --color-on-primary-fixed-variant: #0e009d;
-  --color-primary-fixed: #9396ff;
-  --color-tertiary-dim: #ef81c4;
-  --color-secondary-dim: #645efb;
-  --color-error: #ff6e84;
-  --color-surface-container: #11192e;
-  --color-on-primary-container: #0a0081;
-  --color-surface-tint: #a3a6ff;
-  --color-surface-container-highest: #1c253e;
-  --color-on-secondary-fixed: #2000b0;
-  --color-outline-variant: #41475b;
-  --color-error-container: #a70138;
-  --color-on-surface-variant: #a5aac2;
-  --color-outline: #6f758b;
-  --color-on-tertiary-fixed-variant: #6e1354;
-  --color-on-secondary-container: #cecbff;
+  --color-background: #F8FAFC;
+  --color-on-background: #0F172A;
+  
+  --color-surface: #FFFFFF;
+  --color-on-surface: #0F172A;
+  --color-on-surface-variant: #475569;
+  
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #FFFFFF;
+  --color-surface-container: #F8FAFC;
+  --color-surface-container-high: #F1F5F9;
+  --color-surface-container-highest: #E2E8F0;
+  --color-surface-bright: #F8FAFC;
+  --color-surface-dim: #F1F5F9;
+  
+  --color-primary: #0F172A;
+  --color-primary-dim: #334155;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #F1F5F9;
+  --color-on-primary-container: #0F172A;
+  --color-primary-fixed: #0F172A;
+  --color-primary-fixed-dim: #334155;
+  --color-on-primary-fixed: #FFFFFF;
+  
+  --color-secondary: #475569;
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: #F8FAFC;
+  --color-on-secondary-container: #0F172A;
+  
+  --color-tertiary: #4F46E5;
+  --color-on-tertiary: #FFFFFF;
+  --color-tertiary-container: #EEF2FF;
+  --color-on-tertiary-container: #3730A3;
+  --color-tertiary-fixed: #4F46E5;
+  --color-tertiary-dim: #6366F1;
+  
+  --color-outline: #CBD5E1;
+  --color-outline-variant: #E2E8F0;
+  
+  --color-error: #DC2626;
+  --color-on-error: #FFFFFF;
+  --color-error-container: #FEF2F2;
+  --color-on-error-container: #991B1B;
+  --color-error-dim: #EF4444;
 
-  --font-headline: "Inter", sans-serif;
+  --font-headline: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-body: "Inter", sans-serif;
-  --font-label: "Inter", sans-serif;
+  --font-label: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-on-background);
+  background-color: #F8FAFC;
+  color: #0F172A;
   font-family: var(--font-body);
 }
 
+::selection {
+  background: #E0E7FF;
+  color: #3730A3;
+}
+
+/* Crisp discrete scrollbar for light theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Light Theme Card & Surface Utilities */
+.light-surface {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+}
+
+.light-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+}
+
+.light-card-elevated {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
 .glass-card {
-    background: rgba(28, 37, 62, 0.4);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 20px 40px -12px rgba(7, 13, 31, 0.5), 0 0 15px rgba(163, 166, 255, 0.05);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
 }
-.primary-gradient {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dim) 100%);
-}
-.activity-line {
-    background: linear-gradient(to bottom, var(--color-primary) 0%, transparent 100%);
-}
+
 .ghost-border {
-    border: 1px solid rgba(65, 71, 91, 0.15);
+  border: 1px solid #E2E8F0;
+}
+
+.primary-gradient {
+  background: #0F172A;
+  color: #FFFFFF;
+}
+
+.light-nav-header {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.subtle-canvas-grid {
+  background-image: radial-gradient(#CBD5E1 0.75px, transparent 0.75px);
+  background-size: 20px 20px;
+}
+
+.solid-btn-primary {
+  background-color: #0F172A;
+  color: #FFFFFF;
+  transition: all 0.15s ease;
+}
+.solid-btn-primary:hover {
+  background-color: #1E293B;
+}
+
+.solid-btn-brand {
+  background-color: #4F46E5;
+  color: #FFFFFF;
+  transition: all 0.15s ease;
+}
+.solid-btn-brand:hover {
+  background-color: #4338CA;
+}
+
+.solid-btn-secondary {
+  background-color: #FFFFFF;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  transition: all 0.15s ease;
+}
+.solid-btn-secondary:hover {
+  background-color: #F8FAFC;
+  color: #0F172A;
+  border-color: #94A3B8;
 }

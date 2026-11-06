@@ -11,11 +11,11 @@ export default function SchedulePage() {
   const [isEventModalOpen, setEventModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchEvents = async () => {
     if (!user) {
@@ -73,7 +73,7 @@ export default function SchedulePage() {
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch('/api/events', {
+      const res = await fetch('/api/events', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -81,32 +81,25 @@ export default function SchedulePage() {
         }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = 'Failed to update event';
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || errorMessage;
-        } catch {
-          errorMessage = errorText || response.statusText;
-        }
-        showToastMessage(errorMessage, 'error');
-        return;
+      if (res.ok) {
+        showToastMessage('Event updated successfully', 'success');
+        setEditModalOpen(false);
+        setSelectedEvent(null);
+        fetchEvents();
+      } else {
+        const error = await res.json();
+        showToastMessage(error.error || 'Failed to update event', 'error');
       }
-
-      showToastMessage('Event updated successfully', 'success');
-      setEditModalOpen(false);
-      setSelectedEvent(null);
-      fetchEvents();
     } catch (err) {
-      console.error('Update error:', err);
+      console.error(err);
       showToastMessage('Failed to update event', 'error');
     }
   };
 
   const handleStatusChange = async (eventId: string, newStatus: string) => {
+    if (!user) return;
     const event = events.find(e => e.id === eventId);
-    if (!event || !user) return;
+    if (!event) return;
 
     try {
       const token = await user.getIdToken();
@@ -115,7 +108,7 @@ export default function SchedulePage() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           ...event,
-          status: newStatus
+          status: newStatus,
         }),
       });
 
@@ -154,7 +147,7 @@ export default function SchedulePage() {
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    <>
+    <div className="space-y-8">
       <AddEventModal isOpen={isEventModalOpen} onClose={() => setEventModalOpen(false)} onSuccess={fetchEvents} />
       <EditEventModal
         isOpen={isEditModalOpen}
@@ -169,52 +162,43 @@ export default function SchedulePage() {
       {/* Toast Notification */}
       {showToast && (
         <div className="fixed bottom-8 right-8 z-50 animate-in slide-in-from-bottom-2 fade-in duration-300">
-          <div className={`px-6 py-3 rounded-xl shadow-lg backdrop-blur-md border ${showToast.type === 'success'
-            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200'
-            : 'bg-red-500/20 border-red-500/50 text-red-200'
-            }`}>
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">
-                {showToast.type === 'success' ? 'check_circle' : 'error'}
-              </span>
-              <span className="text-sm font-medium">{showToast.message}</span>
-            </div>
+          <div className={`px-5 py-2.5 rounded-xl shadow-lg border text-xs font-semibold flex items-center gap-2 ${
+            showToast.type === 'success'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              : 'bg-red-50 border-red-300 text-red-800'
+          }`}>
+            <span className="material-symbols-outlined text-[16px]">
+              {showToast.type === 'success' ? 'check_circle' : 'error'}
+            </span>
+            <span>{showToast.message}</span>
           </div>
         </div>
       )}
 
-      <header className="w-full h-20 sticky top-0 z-40 bg-transparent flex items-center justify-between px-12">
-        <div className="flex items-center gap-6 flex-1">
-          <div className="relative w-full max-w-md">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
-            <input className="w-full bg-surface-container-lowest border-none rounded-full py-2.5 pl-12 pr-4 text-sm focus:ring-1 focus:ring-primary transition-all" placeholder="Search events, contacts..." type="text" />
-          </div>
+      {/* Page Header (No duplicate TopNavBar) */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
+        <div>
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-headline)" }}>
+            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            You have {events.filter(e => new Date(e.start_time).getMonth() === currentMonth.getMonth()).length} events scheduled for this month.
+          </p>
         </div>
-        <div className="flex items-center gap-8">
-          <div className="flex bg-surface-container-low p-1 rounded-xl">
-            <button className="px-4 py-1.5 text-xs font-semibold text-[#c0c1ff] bg-surface-container rounded-lg shadow-sm">Monthly</button>
-            <button className="px-4 py-1.5 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors">Weekly</button>
-          </div>
-          <div className="flex items-center gap-4 text-on-surface-variant">
-            <button className="hover:text-primary transition-colors"><span className="material-symbols-outlined">notifications</span></button>
-            <button className="hover:text-primary transition-colors"><span className="material-symbols-outlined">calendar_view_month</span></button>
-            <button className="hover:text-primary transition-colors"><span className="material-symbols-outlined">calendar_view_week</span></button>
-          </div>
-        </div>
-      </header>
+        <button
+          onClick={() => setEventModalOpen(true)}
+          className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all self-start sm:self-auto"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          <span>Create Event</span>
+        </button>
+      </div>
 
-      <div className="px-12 py-6 grid grid-cols-12 gap-10">
-        <div className="col-span-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-4xl font-headline font-extrabold tracking-tight text-on-surface">
-                {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-              </h2>
-              <p className="text-on-surface-variant mt-1">
-                You have {events.filter(e => new Date(e.start_time).getMonth() === currentMonth.getMonth()).length} events scheduled this month.
-              </p>
-            </div>
-          </div>
+      {/* Calendar & Sidebar Grid (Clean Light Theme) */}
+      <div className="grid grid-cols-12 gap-8 items-start">
+        
+        {/* Calendar View (8 cols) */}
+        <div className="col-span-12 lg:col-span-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
           <Calendar
             events={events}
             onDateSelect={setSelectedDate}
@@ -222,64 +206,64 @@ export default function SchedulePage() {
           />
         </div>
 
-        <div className="col-span-4 space-y-8">
-          <div>
-            <h3 className="text-xl font-headline font-bold mb-6 flex items-center gap-2">
-              Upcoming Events
-              <span className="text-[10px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full uppercase tracking-tighter">Next 7 Days</span>
-            </h3>
-            <div className="space-y-4">
+        {/* Upcoming Events (4 cols) */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">
+                Upcoming Events
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                NEXT 7 DAYS
+              </span>
+            </div>
+
+            <div className="space-y-3">
               {loading ? (
-                <div className="text-center py-4 text-on-surface-variant/50">
+                <div className="text-center py-6 text-slate-400">
                   <span className="material-symbols-outlined animate-spin text-2xl">refresh</span>
                 </div>
               ) : upcomingEvents.length === 0 ? (
-                <div className="text-center py-8 text-on-surface-variant/50 bg-surface-container-low border border-dashed border-outline-variant/20 rounded-2xl">
-                  <p className="text-xs uppercase tracking-widest font-bold text-on-surface-variant/60">No upcoming events</p>
+                <div className="text-center py-8 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                  <p className="text-xs font-semibold text-slate-600">No upcoming events</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Click any date on the calendar to add one</p>
                 </div>
               ) : (
                 upcomingEvents.map(event => (
-                  <div key={event.id} className="glass-panel p-5 rounded-3xl hover:translate-x-2 transition-transform cursor-pointer group relative">
-                    <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}
-                        className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-primary transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-xs">edit</span>
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
-                        className="p-1.5 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-xs">delete</span>
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="text-[10px] font-bold text-secondary-fixed-dim uppercase tracking-widest">
+                  <div
+                    key={event.id}
+                    className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 transition-all group relative"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
                         {new Date(event.start_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${event.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'
-                        }`}>
+                      <span className={`text-[10px] font-mono px-2 py-0.2 rounded font-semibold ${
+                        event.status === 'completed'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
                         {event.status || 'pending'}
                       </span>
                     </div>
-                    <h4 className="font-bold text-on-surface mb-1">{event.title}</h4>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="material-symbols-outlined rounded-full p-1 bg-surface-container text-primary text-[10px]">person</span>
-                      <span className="text-xs text-on-surface-variant truncate max-w-[150px]">
-                        {event.description || 'No description provided.'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] bg-surface-container-high px-2 py-1 rounded-md capitalize">
+
+                    <h4 className="text-xs font-bold text-slate-900 mb-1">{event.title}</h4>
+                    {event.description && (
+                      <p className="text-xs text-slate-600 line-clamp-1 mb-2">
+                        {event.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-[10px]">
+                      <span className="capitalize px-2 py-0.5 rounded bg-white border border-slate-200 font-mono text-slate-600">
                         {event.type?.replace('_', ' ') || 'follow up'}
                       </span>
                       {event.status !== 'completed' && (
                         <button
                           onClick={() => handleStatusChange(event.id, 'completed')}
-                          className="text-[10px] px-2 py-1 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+                          className="font-semibold text-emerald-700 hover:text-emerald-800"
                         >
-                          Mark Complete
+                          Mark Complete ✓
                         </button>
                       )}
                     </div>
@@ -289,22 +273,18 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl bg-gradient-to-br from-primary/10 to-transparent">
-            <h4 className="font-headline font-bold text-primary mb-2">Schedule Tip</h4>
-            <p className="text-xs text-on-surface-variant leading-relaxed">
+          {/* Schedule Tip */}
+          <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono mb-1">Schedule Tip</h4>
+            <p className="text-xs text-slate-600 leading-relaxed">
               {selectedDate
-                ? `You have ${getEventsForDate(selectedDate).length} events on ${selectedDate.toLocaleDateString()}. Click on any date to see details.`
-                : 'Click on any date in the calendar to view or add events for that day.'}
+                ? `You have ${getEventsForDate(selectedDate).length} event(s) on ${selectedDate.toLocaleDateString()}. Click any date in the calendar to view or schedule.`
+                : 'Click any date in the calendar to view or add events for that day.'}
             </p>
-            <button
-              onClick={() => setEventModalOpen(true)}
-              className="mt-4 w-full py-2 bg-primary text-on-primary font-bold text-xs rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
-            >
-              Create New Event
-            </button>
           </div>
         </div>
+
       </div>
-    </>
+    </div>
   );
 }

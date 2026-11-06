@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       secret,
       qrCodeUrl
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('MFA generate error:', error);
     return NextResponse.json({ error: 'Internal server error while generating MFA' }, { status: 500 });
   }

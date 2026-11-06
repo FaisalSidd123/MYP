@@ -38,44 +38,44 @@ export default function AddTaskModal({ isOpen, onClose, onSuccess }: { isOpen: b
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-[#070d1f]/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
         onClick={onClose}
       ></div>
 
       {/* Modal Card */}
-      <div className="glass-card relative z-10 w-full max-w-lg rounded-3xl p-8 shadow-2xl border border-white/10 animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-start mb-6">
+      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex justify-between items-start mb-5 pb-3 border-b border-slate-100">
           <div>
-            <h2 className="text-2xl font-bold text-on-surface">New Task</h2>
-            <p className="text-sm text-on-surface-variant mt-1">Add a new item to your Kanban pipeline.</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-headline)" }}>New Task</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Add a new actionable item to your Kanban board.</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 rounded-xl bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Task Title</label>
-            <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20" placeholder="Deploy updated architecture" />
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Task Title *</label>
+            <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400" placeholder="e.g. Schedule onboarding demo" />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Description</label>
-            <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={3} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 resize-none" placeholder="Details regarding the task..."></textarea>
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Description *</label>
+            <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={3} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none" placeholder="Details and next steps regarding the task..."></textarea>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Due Date</label>
-              <input required value={formData.due_date} onChange={e => setFormData({...formData, due_date: e.target.value})} type="date" className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 hover:cursor-pointer" style={{ colorScheme: 'dark' }} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Due Date *</label>
+              <input required value={formData.due_date} onChange={e => setFormData({...formData, due_date: e.target.value})} type="date" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400 font-mono" />
             </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Status</label>
-              <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 appearance-none hover:cursor-pointer">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Status</label>
+              <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400">
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="completed">Completed</option>
@@ -83,18 +83,18 @@ export default function AddTaskModal({ isOpen, onClose, onSuccess }: { isOpen: b
             </div>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button 
               type="button" 
               onClick={onClose}
-              className="px-6 py-3 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              className="px-4 py-2 rounded-xl font-semibold text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="px-6 py-3 rounded-xl font-bold bg-gradient-to-br from-primary to-primary-dim text-on-primary-fixed shadow-lg shadow-primary/20 hover:scale-105 transition-transform disabled:opacity-50"
+              className="px-5 py-2 rounded-xl font-semibold text-xs bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Task'}
             </button>

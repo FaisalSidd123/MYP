@@ -1,46 +1,72 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import React from "react";
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
+  const navLinks = [
+    { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
+    { label: "Contacts", href: "/contacts", icon: "group" },
+    { label: "Schedule", href: "/schedule", icon: "calendar_today" },
+    { label: "Tasks", href: "/tasks", icon: "fact_check" },
+  ];
+
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 bg-[#0c1326]/40 backdrop-blur-xl flex flex-col p-4 space-y-2 z-50 antialiased tracking-tight shadow-[0_0_15px_rgba(163,166,255,0.05)]">
-       <div className="mb-10 px-2 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl primary-gradient flex items-center justify-center text-color-on-primary">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>hub</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-black tracking-tighter text-[#dfe4fe]">ContactHub</h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-on-surface-variant)] font-bold">Management Suite</p>
-          </div>
-       </div>
-       <nav className="flex-1 space-y-1">
-          <Link className="flex items-center gap-3 px-4 py-3 text-[#dfe4fe] bg-[#171f36] rounded-xl font-semibold transition-all duration-300 scale-102 active:scale-98" href="/dashboard">
-            <span className="material-symbols-outlined">dashboard</span>
-            <span>Dashboard</span>
-          </Link>
-          <Link className="flex items-center gap-3 px-4 py-3 text-[#a5aac2] hover:text-[#dfe4fe] hover:bg-[#222b47]/50 transition-all duration-300 rounded-xl" href="/contacts">
-            <span className="material-symbols-outlined">group</span>
-            <span>Contacts</span>
-          </Link>
-          <Link className="flex items-center gap-3 px-4 py-3 text-[#a5aac2] hover:text-[#dfe4fe] hover:bg-[#222b47]/50 transition-all duration-300 rounded-xl" href="/schedule">
-            <span className="material-symbols-outlined">calendar_today</span>
-            <span>Schedule</span>
-          </Link>
-          <Link className="flex items-center gap-3 px-4 py-3 text-[#a5aac2] hover:text-[#dfe4fe] hover:bg-[#222b47]/50 transition-all duration-300 rounded-xl" href="/tasks">
-            <span className="material-symbols-outlined">fact_check</span>
-            <span>Tasks</span>
-          </Link>
-       </nav>
-       <div className="pt-4 border-t border-[var(--color-outline-variant)]/10 space-y-1">
-          <Link className="flex items-center gap-3 px-4 py-3 text-[#a5aac2] hover:text-[#dfe4fe] hover:bg-[#222b47]/50 transition-all duration-300 rounded-xl" href="#">
-            <span className="material-symbols-outlined">settings</span>
-            <span>Settings</span>
-          </Link>
-          <Link className="flex items-center gap-3 px-4 py-3 text-[#a5aac2] hover:text-red-400 hover:bg-red-400/10 transition-all duration-300 rounded-xl" href="#">
-            <span className="material-symbols-outlined">logout</span>
-            <span>Logout</span>
-          </Link>
-       </div>
+    <aside className="h-screen w-64 fixed left-0 top-0 bg-white border-r border-slate-200 flex flex-col p-4 space-y-2 z-50 antialiased tracking-tight shadow-xs">
+      {/* Brand Header */}
+      <div className="mb-8 px-2 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
+          <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+            hub
+          </span>
+        </div>
+        <div>
+          <h1 className="text-base font-bold tracking-tight text-slate-900">ContactHub</h1>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-mono font-medium">Management Suite</p>
+        </div>
+      </div>
+
+      {/* Nav List */}
+      <nav className="flex-1 space-y-1">
+        {navLinks.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? "bg-slate-900 text-white shadow-xs font-semibold"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[19px]">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Footer / Utilities */}
+      <div className="pt-4 border-t border-slate-200 space-y-1">
+        <Link
+          className="flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all rounded-lg text-xs font-medium"
+          href="#"
+        >
+          <span className="material-symbols-outlined text-[19px]">settings</span>
+          <span>Settings</span>
+        </Link>
+        <Link
+          className="flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:text-red-600 hover:bg-red-50 transition-all rounded-lg text-xs font-medium"
+          href="/login"
+        >
+          <span className="material-symbols-outlined text-[19px]">logout</span>
+          <span>Logout</span>
+        </Link>
+      </div>
     </aside>
   );
 }

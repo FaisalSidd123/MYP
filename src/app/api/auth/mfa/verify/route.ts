@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, message: 'MFA Verification successful' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('MFA verify error:', error);
     return NextResponse.json({ error: 'Internal server error while verifying MFA' }, { status: 500 });
   }

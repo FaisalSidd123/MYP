@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/authMiddleware';
 
 export async function POST(request: Request) {
-  const { uid: authUserId, error: authError } = await verifyAuth(request);
+  const { error: authError } = await verifyAuth(request);
   if (authError) return authError;
 
   try {
@@ -74,13 +74,13 @@ ${rawText}
     try {
       const parsedJSON = JSON.parse(content);
       return NextResponse.json(parsedJSON);
-    } catch (parseError) {
+    } catch {
       console.error('Failed to parse JSON:', content);
       return NextResponse.json({ error: 'AI returned invalid JSON format' }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in parse-contact route:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
   }
 }

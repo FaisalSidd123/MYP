@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     .order('name', { ascending: true });
 
   if (error) {
+    console.error('[/api/contacts GET Error]:', error.message, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

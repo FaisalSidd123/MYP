@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     .order('start_time', { ascending: true });
 
   if (error) {
+    console.error('[/api/events GET Error]:', error.message, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

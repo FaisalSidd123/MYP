@@ -21,19 +21,19 @@ export default function DashboardLayout({
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
-        <div className="w-10 h-10 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFC]">
+        <div className="w-8 h-8 border-3 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <>
+    <div className="bg-[#FAFAFC] min-h-screen text-slate-900">
       <Sidebar />
       <TopNavBar />
       <main className="ml-64 pt-24 pb-12 px-8 min-h-screen">
         {children}
       </main>
-    </>
+    </div>
   );
 }

@@ -53,94 +53,103 @@ export default function EditTaskModal({ isOpen, onClose, task, onSave }: EditTas
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-[#0a1025] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
-                <div className="sticky top-0 bg-[#0a1025] px-6 py-4 border-b border-white/10 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-on-surface">Edit Task</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div 
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+                onClick={onClose}
+            ></div>
+            <div className="relative z-10 bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-slate-200 shadow-2xl">
+                <div className="sticky top-0 bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center z-10">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-headline)" }}>Edit Task</h2>
+                        <p className="text-xs text-slate-500 mt-0.5">Update task status and requirements.</p>
+                    </div>
                     <button
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-800 transition-colors"
                     >
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Title *</label>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Title *</label>
                         <input
                             type="text"
                             name="title"
                             value={formData.title}
                             onChange={handleChange}
                             required
-                            className="w-full bg-[#111827] border border-white/10 rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Client ID (Optional)</label>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Client ID (Optional)</label>
                         <input
                             type="text"
                             name="client_id"
                             value={formData.client_id}
                             onChange={handleChange}
-                            placeholder="Link to a client by UUID"
-                            className="w-full bg-[#111827] border border-white/10 rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            placeholder="Link to a client UUID"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 font-mono"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Description</label>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Description</label>
                         <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
                             rows={3}
                             placeholder="Task details..."
-                            className="w-full bg-[#111827] border border-white/10 rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Due Date</label>
-                        <input
-                            type="date"
-                            name="due_date"
-                            value={formData.due_date}
-                            onChange={handleChange}
-                            className="w-full bg-[#111827] border border-white/10 rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Due Date</label>
+                            <input
+                                type="date"
+                                name="due_date"
+                                value={formData.due_date}
+                                onChange={handleChange}
+                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400 font-mono"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">Status</label>
+                            <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400"
+                            >
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-on-surface-variant mb-1">Status</label>
-                        <select
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            className="w-full bg-[#111827] border border-white/10 rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        >
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-2.5 pt-3 border-t border-slate-100">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-2.5 border border-white/20 rounded-lg text-on-surface-variant hover:bg-white/5 transition-colors disabled:opacity-50"
+                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-2.5 bg-primary hover:bg-primary-dim rounded-lg text-on-primary-fixed font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-xl text-white text-xs font-semibold transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </button>

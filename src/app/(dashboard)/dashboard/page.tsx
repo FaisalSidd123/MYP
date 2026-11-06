@@ -1,10 +1,37 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
+
+interface DashboardStats {
+  totalContacts: number;
+  schedulesToday: number;
+  pendingTasks: number;
+  completedTasks: number;
+}
+
+interface ScheduleItem {
+  id: string;
+  title: string;
+  start_time: string;
+  type: string;
+}
+
+interface TaskItem {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  created_at: string;
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<{
+    stats: DashboardStats;
+    upcomingSchedules: ScheduleItem[];
+    recentActivity: TaskItem[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,8 +42,10 @@ export default function DashboardPage() {
         const res = await fetch(`/api/dashboard/stats`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const json = await res.json();
-        setData(json);
+        if (res.ok) {
+          const json = await res.json();
+          setData(json);
+        }
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
       } finally {
@@ -29,7 +58,7 @@ export default function DashboardPage() {
   if (loading || !data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-10 h-10 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -41,7 +70,7 @@ export default function DashboardPage() {
     const d = new Date(isoString);
     return {
       time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).split(' ')[0],
-      ampm: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).split(' ')[1],
+      ampm: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).split(' ')[1] || 'AM',
     };
   };
 
@@ -52,145 +81,192 @@ export default function DashboardPage() {
   };
 
   return (
-    <>
+    <div className="space-y-8">
       {/* Welcome Header */}
-      <header className="mb-10 flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[var(--color-on-surface)] mb-1">
-            Morning, {user?.displayName ? user.displayName.split(' ')[0] : 'Architect'}.
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900" style={{ fontFamily: "var(--font-headline)" }}>
+            Morning, {user?.displayName ? user.displayName.split(' ')[0] : 'Faisal'}.
           </h2>
-          <p className="text-[var(--color-on-surface-variant)]">Here's what's happening in your network today.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Here&apos;s what&apos;s happening across your client pipeline today.
+          </p>
         </div>
-        <button className="primary-gradient text-[var(--color-on-primary)] px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition-transform">
-          <span className="material-symbols-outlined">add</span>
-          New Contact
-        </button>
-      </header>
-
-      {/* KPI Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {/* Card 1 */}
-        <div className="glass-card ghost-border p-6 rounded-2xl group hover:bg-[var(--color-surface-bright)]/40 transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-[var(--color-primary)]/10 rounded-xl text-[var(--color-primary)]">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-on-surface-variant)] flex items-center gap-1">
-              <span className="material-symbols-outlined text-xs text-green-400">trending_up</span>
-            </span>
-          </div>
-          <h3 className="text-[var(--color-on-surface-variant)] text-xs font-bold uppercase tracking-wider mb-1">Total Contacts</h3>
-          <p className="text-3xl font-black text-[var(--color-on-surface)] tracking-tighter">{stats?.totalContacts}</p>
-        </div>
-
-        {/* Card 2 */}
-        <div className="glass-card ghost-border p-6 rounded-2xl group hover:bg-[var(--color-surface-bright)]/40 transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-[var(--color-tertiary)]/10 rounded-xl text-[var(--color-tertiary)]">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>event_available</span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-on-surface-variant)]">Live Today</span>
-          </div>
-          <h3 className="text-[var(--color-on-surface-variant)] text-xs font-bold uppercase tracking-wider mb-1">Scheduled Today</h3>
-          <p className="text-3xl font-black text-[var(--color-on-surface)] tracking-tighter">{stats?.schedulesToday}</p>
-        </div>
-
-        {/* Card 3 */}
-        <div className="glass-card ghost-border p-6 rounded-2xl group hover:bg-[var(--color-surface-bright)]/40 transition-all duration-300 border-l-4 border-l-[var(--color-error)]/30">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-[var(--color-error)]/10 rounded-xl text-[var(--color-error)]">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>pending_actions</span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-error-dim)]">Urgent</span>
-          </div>
-          <h3 className="text-[var(--color-on-surface-variant)] text-xs font-bold uppercase tracking-wider mb-1">Pending Approvals</h3>
-          <p className="text-3xl font-black text-[var(--color-on-surface)] tracking-tighter">{stats?.pendingTasks}</p>
-        </div>
-
-        {/* Card 4 */}
-        <div className="glass-card ghost-border p-6 rounded-2xl group hover:bg-[var(--color-surface-bright)]/40 transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-green-400/10 rounded-xl text-green-400">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-on-surface-variant)]">All Time</span>
-          </div>
-          <h3 className="text-[var(--color-on-surface-variant)] text-xs font-bold uppercase tracking-wider mb-1">Completed Tasks</h3>
-          <p className="text-3xl font-black text-[var(--color-on-surface)] tracking-tighter">{stats?.completedTasks}</p>
-        </div>
+        <Link
+          href="/contacts"
+          className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs self-start sm:self-auto"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          <span>New Contact</span>
+        </Link>
       </div>
 
-      {/* Main Dashboard Split */}
-      <div className="grid grid-cols-12 gap-8">
-        {/* Recent Activity Feed (8 cols) */}
-        <div className="col-span-12 lg:col-span-8 bg-[var(--color-surface-container-low)] rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--color-primary)]/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
-          <div className="flex items-center justify-between mb-8 relative z-10">
-            <h3 className="text-xl font-bold text-[var(--color-on-surface)]">Recent Task Updates</h3>
-            <button className="text-[var(--color-primary)] text-xs font-bold uppercase tracking-widest hover:underline">View All</button>
+      {/* KPI Stat Cards (Crisp Light Theme, High Contrast) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        {/* Card 1: Total Contacts */}
+        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px]">groups</span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1 font-mono">
+              <span className="material-symbols-outlined text-[12px]">trending_up</span>
+              <span>LIVE</span>
+            </span>
           </div>
-          <div className="space-y-8 relative z-10">
-            {recentActivity && recentActivity.length > 0 ? recentActivity.map((activity: any, idx: number) => (
-              <div key={activity.id} className="flex gap-6 group">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-[var(--color-primary)]/20 group-hover:ring-[var(--color-primary)] transition-all duration-500 bg-[var(--color-surface-bright)] flex items-center justify-center">
-                     <span className="material-symbols-outlined text-[var(--color-primary)]">fact_check</span>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total Contacts</h3>
+          <p className="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">{stats?.totalContacts ?? 0}</p>
+        </div>
+
+        {/* Card 2: Scheduled Today */}
+        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px]">event_available</span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
+              TODAY
+            </span>
+          </div>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Scheduled Today</h3>
+          <p className="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">{stats?.schedulesToday ?? 0}</p>
+        </div>
+
+        {/* Card 3: Pending Approvals */}
+        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-slate-300 transition-all border-l-4 border-l-amber-500">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-amber-50 text-amber-700 border border-amber-100 rounded-xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px]">pending_actions</span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-mono">
+              PENDING
+            </span>
+          </div>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Pending Approvals</h3>
+          <p className="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">{stats?.pendingTasks ?? 0}</p>
+        </div>
+
+        {/* Card 4: Completed Tasks */}
+        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px]">task_alt</span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
+              ALL TIME
+            </span>
+          </div>
+          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Completed Tasks</h3>
+          <p className="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">{stats?.completedTasks ?? 0}</p>
+        </div>
+
+      </div>
+
+      {/* Main Dashboard Split (Clean White Cards, No Pitch Black Boxes) */}
+      <div className="grid grid-cols-12 gap-8">
+        
+        {/* Recent Activity Feed (8 cols) */}
+        <div className="col-span-12 lg:col-span-8 bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-xs">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "var(--font-headline)" }}>
+                Recent Task Updates
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Chronological audit stream of client pipeline actions</p>
+            </div>
+            <Link href="/tasks" className="text-xs font-semibold text-slate-900 hover:text-indigo-600 transition-colors">
+              View All Tasks →
+            </Link>
+          </div>
+
+          <div className="space-y-4">
+            {recentActivity && recentActivity.length > 0 ? (
+              recentActivity.map((activity, idx) => (
+                <div key={activity.id || idx} className="flex items-start gap-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100/60 transition-colors">
+                  <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 text-slate-700 shadow-xs">
+                    <span className="material-symbols-outlined text-[18px]">fact_check</span>
                   </div>
-                  {idx !== recentActivity.length - 1 && <div className="w-[2px] flex-1 activity-line mt-4"></div>}
-                </div>
-                <div className="pb-8">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-[var(--color-on-surface)]">{activity.title}</span>
-                    <span className="px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-[10px] font-bold uppercase tracking-wider">
-                      {activity.status}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-bold text-slate-900 truncate">{activity.title}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-mono uppercase font-medium shrink-0">
+                        {activity.status}
+                      </span>
+                    </div>
+                    {activity.description && (
+                      <p className="text-xs text-slate-600 line-clamp-1 mb-1.5">
+                        {activity.description}
+                      </p>
+                    )}
+                    <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px]">schedule</span>
+                      <span>{getRelativeTime(activity.created_at)}</span>
                     </span>
                   </div>
-                  <p className="text-[var(--color-on-surface-variant)] text-sm mb-3">
-                    {activity.description || "No description provided."}
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-bold text-[var(--color-on-surface-variant)]/60 uppercase tracking-widest flex items-center gap-1">
-                      <span className="material-symbols-outlined text-xs">schedule</span>
-                      {getRelativeTime(activity.created_at)}
-                    </span>
-                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-12 rounded-xl bg-slate-50 border border-dashed border-slate-200">
+                <span className="material-symbols-outlined text-slate-400 text-3xl mb-1">inbox</span>
+                <p className="text-xs font-medium text-slate-600">No recent tasks found</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Tasks created on the board will appear here</p>
               </div>
-            )) : (
-               <p className="text-sm text-[var(--color-on-surface-variant)]">No recent tasks found.</p>
             )}
           </div>
         </div>
 
-        {/* Mini Calendar & Sidebar Widget (4 cols) */}
-        <div className="col-span-12 lg:col-span-4 space-y-8">
-          {/* Upcoming Widget */}
-          <div className="bg-[var(--color-surface-container-high)] rounded-2xl p-6 relative overflow-hidden group">
-            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-[var(--color-primary)]/10 rounded-full blur-3xl group-hover:bg-[var(--color-primary)]/20 transition-all"></div>
-            <h3 className="font-bold text-[var(--color-on-surface)] mb-6">Upcoming Schedule</h3>
-            <div className="space-y-4 relative z-10">
-              {upcomingSchedules && upcomingSchedules.length > 0 ? upcomingSchedules.map((schedule: any) => {
-                const { time, ampm } = formatTime(schedule.start_time);
-                return (
-                  <div key={schedule.id} className="flex items-center gap-4 p-3 bg-[var(--color-surface-container-lowest)]/50 rounded-xl ghost-border">
-                    <div className="text-center min-w-[40px]">
-                      <p className="text-[10px] font-bold text-[var(--color-primary)] uppercase">{time}</p>
-                      <p className="text-[8px] text-[var(--color-on-surface-variant)]">{ampm}</p>
+        {/* Upcoming Schedule Widget (4 cols) */}
+        <div className="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "var(--font-headline)" }}>
+                Upcoming Schedule
+              </h3>
+              <Link href="/schedule" className="text-xs font-semibold text-slate-900 hover:text-indigo-600 transition-colors">
+                Calendar →
+              </Link>
+            </div>
+
+            <div className="space-y-3">
+              {upcomingSchedules && upcomingSchedules.length > 0 ? (
+                upcomingSchedules.map((schedule) => {
+                  const { time, ampm } = formatTime(schedule.start_time);
+                  return (
+                    <div key={schedule.id} className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                      <div className="text-center min-w-[44px] py-1 px-1.5 rounded-lg bg-white border border-slate-200 shrink-0">
+                        <p className="text-[11px] font-bold text-slate-900 font-mono">{time}</p>
+                        <p className="text-[9px] text-slate-500 font-mono uppercase">{ampm}</p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-900 truncate">{schedule.title}</p>
+                        <p className="text-[11px] text-slate-500 capitalize">{schedule.type ? schedule.type.replace('_', ' ') : 'Appointment'}</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-[var(--color-on-surface)]">{schedule.title}</p>
-                      <p className="text-[10px] text-[var(--color-on-surface-variant)] capitalize">{schedule.type.replace('_', ' ')}</p>
-                    </div>
-                  </div>
-                );
-              }) : (
-                <p className="text-sm text-[var(--color-on-surface-variant)]">No upcoming events.</p>
+                  );
+                })
+              ) : (
+                <div className="text-center py-12 rounded-xl bg-slate-50 border border-dashed border-slate-200">
+                  <span className="material-symbols-outlined text-slate-400 text-3xl mb-1">event</span>
+                  <p className="text-xs font-medium text-slate-600">No upcoming events</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Appointments will be listed here</p>
+                </div>
               )}
             </div>
           </div>
-        </div>
-      </div>
 
-    </>
+          <div className="pt-6 mt-6 border-t border-slate-100 text-center">
+            <Link
+              href="/schedule"
+              className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all"
+            >
+              <span>View Full Agenda</span>
+              <span>→</span>
+            </Link>
+          </div>
+        </div>
+
+      </div>
+    </div>
   );
 }

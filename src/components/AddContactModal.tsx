@@ -34,9 +34,9 @@ export default function AddContactModal({ isOpen, onClose, onSuccess }: { isOpen
         ...data,
       }));
       setRawText('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setAiError(err.message || 'Something went wrong');
+      setAiError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsAiParsing(false);
     }
@@ -74,91 +74,92 @@ export default function AddContactModal({ isOpen, onClose, onSuccess }: { isOpen
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-[#070d1f]/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
         onClick={onClose}
       ></div>
 
       {/* Modal Card */}
-      <div className="glass-card relative z-10 w-full max-w-lg rounded-3xl p-8 shadow-2xl border border-white/10 animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-start mb-6">
+      <div className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex justify-between items-start mb-5 pb-3 border-b border-slate-100">
           <div>
-            <h2 className="text-2xl font-bold text-on-surface">New Contact</h2>
-            <p className="text-sm text-on-surface-variant mt-1">Add a new connection to your enterprise network.</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-headline)" }}>New Contact</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Add a new connection or client to your pipeline.</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 rounded-xl bg-surface-container-high text-on-surface-variant hover:text-error transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           {/* AI Parse Section */}
-          <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-3">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-primary tracking-widest uppercase flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
-                AI Magic Parse
+              <label className="text-[11px] font-bold text-slate-700 tracking-wider uppercase flex items-center gap-1.5 font-mono">
+                <span className="material-symbols-outlined text-[15px] text-indigo-600">auto_awesome</span>
+                <span>AI Quick Parse</span>
               </label>
+              <span className="text-[10px] text-slate-400">Paste text & extract</span>
             </div>
             <textarea 
               value={rawText} 
               onChange={(e) => setRawText(e.target.value)} 
-              rows={3} 
-              className="w-full bg-surface-container-lowest border border-primary/20 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 resize-none font-mono text-sm placeholder:font-sans" 
-              placeholder="Paste raw text here... e.g.&#10;faisal&#10;faisal@gmail.com&#10;300000"
+              rows={2} 
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/10 resize-none font-mono" 
+              placeholder="Paste email, signature, or note (e.g. Faisal, faisal@gmail.com, 555-0199)"
             ></textarea>
             
-            {aiError && <p className="text-red-400 text-xs">{aiError}</p>}
+            {aiError && <p className="text-red-600 text-xs">{aiError}</p>}
             
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={handleParseAI}
                 disabled={isAiParsing || !rawText.trim()}
-                className="px-4 py-2 rounded-lg font-bold bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+                className="px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-800 hover:bg-slate-100 transition-colors disabled:opacity-50 flex items-center gap-1.5 text-xs shadow-xs"
               >
                 {isAiParsing ? (
-                  <><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> Parsing...</>
+                  <><span className="material-symbols-outlined text-[14px] animate-spin">refresh</span> Parsing...</>
                 ) : (
-                  <><span className="material-symbols-outlined text-[16px]">bolt</span> Organize with AI</>
+                  <><span className="material-symbols-outlined text-[14px] text-indigo-600">bolt</span> Extract Fields</>
                 )}
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Full Name</label>
-              <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20" placeholder="Jane Doe" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Full Name *</label>
+              <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400" placeholder="Jane Doe" />
             </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Phone Number</label>
-              <input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20" placeholder="+1 (555) 000-0000" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Email Address</label>
-            <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20" placeholder="jane.doe@company.com" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Company</label>
-              <input value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20" placeholder="Lumon Industries" />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Lead Source</label>
-              <input value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20" placeholder="Referral, Inbound" />
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Phone Number</label>
+              <input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 font-mono" placeholder="+1 (555) 000-0000" />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Status</label>
-              <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 appearance-none hover:cursor-pointer">
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Email Address *</label>
+            <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400" placeholder="jane.doe@company.com" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Company</label>
+              <input value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400" placeholder="Acme Inc." />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Lead Source</label>
+              <input value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400" placeholder="Inbound, Referral" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Status</label>
+              <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400">
                 <option value="new">New</option>
                 <option value="contacted">Contacted</option>
                 <option value="negotiation">Negotiation</option>
@@ -166,29 +167,29 @@ export default function AddContactModal({ isOpen, onClose, onSuccess }: { isOpen
                 <option value="completed">Completed</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Pitch Themes</label>
-              <input value={formData.pitch} onChange={e => setFormData({...formData, pitch: e.target.value})} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20" placeholder="SaaS, Mobile App..." />
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Pitch Themes</label>
+              <input value={formData.pitch} onChange={e => setFormData({...formData, pitch: e.target.value})} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400" placeholder="SaaS, Enterprise" />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-on-surface-variant tracking-widest uppercase ml-1">Pitch Notes</label>
-            <textarea value={formData.pitch_notes} onChange={e => setFormData({...formData, pitch_notes: e.target.value})} rows={2} className="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 resize-none" placeholder="Notes during scoping..."></textarea>
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">Pitch Notes</label>
+            <textarea value={formData.pitch_notes} onChange={e => setFormData({...formData, pitch_notes: e.target.value})} rows={2} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none" placeholder="Notes during conversation..."></textarea>
           </div>
 
-          <div className="pt-4 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button 
               type="button" 
               onClick={onClose}
-              className="px-6 py-3 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              className="px-4 py-2 rounded-xl font-semibold text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="px-6 py-3 rounded-xl font-bold bg-gradient-to-br from-primary to-primary-dim text-on-primary-fixed shadow-lg shadow-primary/20 hover:scale-105 transition-transform disabled:opacity-50"
+              className="px-5 py-2 rounded-xl font-semibold text-xs bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Save Contact'}
             </button>
