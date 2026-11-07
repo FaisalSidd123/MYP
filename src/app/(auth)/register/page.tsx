@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import MypLogo from '@/components/brand/MypLogo';
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
@@ -60,10 +61,8 @@ export default function RegisterPage() {
         
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center shadow-xs mb-3 font-mono font-black text-base">
-            <span className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
-              MYP
-            </span>
+          <div className="mb-3">
+            <MypLogo size={46} variant="mark" />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-headline)" }}>
             Create an Account

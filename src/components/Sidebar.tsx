@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
+import MypLogo from "@/components/brand/MypLogo";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -19,24 +20,9 @@ export default function Sidebar() {
 
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-white border-r border-slate-200 flex flex-col p-4 space-y-2 z-50 antialiased tracking-tight shadow-xs">
-      {/* Attractive MYP Brand Header */}
-      <Link href="/dashboard" className="mb-8 px-2 flex items-center gap-3 group">
-        <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center shadow-xs transition-transform group-hover:scale-105 shrink-0">
-          <span className="font-extrabold text-sm tracking-tight bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent font-mono">
-            MYP
-          </span>
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h1 className="text-base font-extrabold tracking-tight text-slate-900 leading-none" style={{ fontFamily: "var(--font-headline)" }}>
-              MYP
-            </h1>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="System Active" />
-          </div>
-          <p className="text-[10px] text-slate-500 font-medium tracking-tight truncate mt-0.5">
-            Manage Your Priorities
-          </p>
-        </div>
+      {/* Attractive MYP Brand Header with interactive Convergence Y logo */}
+      <Link href="/dashboard" className="mb-7 px-2 block group">
+        <MypLogo size={38} variant="full" showTagline={true} />
       </Link>
 
       {/* Nav List */}

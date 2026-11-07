@@ -5,6 +5,7 @@ import { motion, useScroll, useSpring } from "framer-motion";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Hero from "@/components/Hero";
+import MypLogo from "@/components/brand/MypLogo";
 
 // ─── SAMPLE TEMPLATES FOR INTERACTIVE PLAYGROUND ───
 const PLAYGROUND_TEMPLATES = [
@@ -71,21 +72,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[64px]">
             
-            {/* Brand Logo */}
-            <Link href="/" className="flex items-center gap-3 group shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center font-mono font-black text-xs shadow-xs transition-transform group-hover:scale-105">
-                <span className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
-                  MYP
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[17px] font-extrabold text-slate-900 tracking-tight leading-none" style={{ fontFamily: "var(--font-headline)" }}>
-                  MYP
-                </span>
-                <span className="text-[10px] text-slate-500 font-medium tracking-tight mt-0.5">
-                  Manage Your Priorities
-                </span>
-              </div>
+            {/* Brand Logo with Convergence Y Icon */}
+            <Link href="/" className="shrink-0 block">
+              <MypLogo size={36} variant="full" showTagline={true} />
             </Link>
 
             {/* Navigation Links */}
@@ -948,17 +937,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center font-mono font-black text-xs shadow-xs">
-              <span className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
-                MYP
-              </span>
-            </div>
-            <div>
-              <span className="text-sm font-extrabold text-slate-900" style={{ fontFamily: "var(--font-headline)" }}>
-                MYP
-              </span>
-              <span className="text-slate-500 text-xs ml-2">© 2026 MYP — Manage Your Priorities. All rights reserved.</span>
-            </div>
+            <MypLogo size={32} variant="full" />
+            <span className="text-slate-400 text-xs ml-1 border-l border-slate-200 pl-3">© 2026 MYP — Manage Your Priorities. All rights reserved.</span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-700 font-semibold">
