@@ -458,16 +458,16 @@ export default function DashboardPage() {
 
                     {/* Card Actions */}
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => handleSelectNiche(niche.id)}
+                      <Link
+                        href={`/niches/${niche.id}`}
                         className="text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center gap-1 transition-colors"
                       >
-                        <span>View Leads</span>
+                        <span>Open Workspace</span>
                         <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                      </button>
+                      </Link>
                       <button
                         onClick={() => handleOpenAddLeadForNiche(niche.id)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-semibold transition-colors flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[13px]">add</span>
                         <span>Add Lead</span>

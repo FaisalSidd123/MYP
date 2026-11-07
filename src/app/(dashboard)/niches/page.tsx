@@ -219,21 +219,26 @@ export default function NichesPage() {
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
+                    <Link
+                      href={`/niches/${niche.id}`}
+                      className="flex items-center gap-3 hover:opacity-90 transition-opacity flex-1 min-w-0"
+                    >
                       <div className={`w-11 h-11 rounded-xl ${colorInfo.badge} flex items-center justify-center shadow-xs shrink-0`}>
                         <span className="material-symbols-outlined text-[22px]">{niche.icon || 'category'}</span>
                       </div>
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900 leading-tight">{niche.name}</h3>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-slate-900 leading-tight hover:text-indigo-600 transition-colors truncate">
+                          {niche.name}
+                        </h3>
                         <p className="text-xs text-slate-400 font-mono mt-0.5">
                           Target: {formatCurrency(niche.target_deal_size || 0)}
                         </p>
                       </div>
-                    </div>
+                    </Link>
 
                     <button
                       onClick={() => handleDeleteNiche(niche.id, niche.name)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
                       title="Delete Niche"
                     >
                       <span className="material-symbols-outlined text-[17px]">delete</span>
@@ -266,18 +271,18 @@ export default function NichesPage() {
                 {/* Footer Actions */}
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
                   <Link
-                    href={`/contacts?niche_id=${niche.id}`}
-                    className="text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center gap-1 transition-colors"
+                    href={`/niches/${niche.id}`}
+                    className="text-xs font-semibold text-slate-800 hover:text-slate-900 flex items-center gap-1.5 transition-colors group-hover:underline"
                   >
-                    <span>View All Leads</span>
-                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    <span>Open Workspace & Leads</span>
+                    <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
                   </Link>
                   <button
                     onClick={() => {
                       setSelectedNicheForLead(niche.id);
                       setIsAddContactModalOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[14px]">add</span>
                     <span>Add Lead</span>
