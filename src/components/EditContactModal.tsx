@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { calculateLeadAge } from '@/lib/leadAge';
 
 interface EditContactModalProps {
   isOpen: boolean;
@@ -25,7 +26,8 @@ export default function EditContactModal({ isOpen, onClose, contact, onSave }: E
     deal_value: '',
     pitch: [] as string[],
     pitch_notes: '',
-    avatar_url: ''
+    avatar_url: '',
+    created_at: ''
   });
   const [pitchInput, setPitchInput] = useState('');
 
@@ -65,7 +67,8 @@ export default function EditContactModal({ isOpen, onClose, contact, onSave }: E
         deal_value: contact.deal_value !== undefined ? String(contact.deal_value) : '',
         pitch: contact.pitch || [],
         pitch_notes: contact.pitch_notes || '',
-        avatar_url: contact.avatar_url || ''
+        avatar_url: contact.avatar_url || '',
+        created_at: contact.created_at ? contact.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10)
       });
     }
   }, [contact]);
@@ -252,6 +255,34 @@ export default function EditContactModal({ isOpen, onClose, contact, onSave }: E
               <option value="approved">Approved</option>
               <option value="completed">Completed / Won</option>
             </select>
+          </div>
+
+          {/* Lead Creation Date & Calculated Age */}
+          <div className="p-3 bg-slate-50 border border-slate-200/90 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider font-mono">
+                Lead Arrival / Created Date
+              </label>
+              {(() => {
+                const age = calculateLeadAge(formData.created_at);
+                return (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${age.badgeClasses}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${age.dotColor}`} />
+                    <span>{age.badgeText} ({age.label})</span>
+                  </span>
+                );
+              })()}
+            </div>
+            <input
+              type="date"
+              name="created_at"
+              value={formData.created_at}
+              onChange={handleChange}
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400 font-mono"
+            />
+            <p className="text-[10px] text-slate-400">
+              Lead Age in days is dynamically calculated from this date so you can analyze pipeline freshness.
+            </p>
           </div>
 
           <div>

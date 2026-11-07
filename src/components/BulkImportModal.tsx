@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { parseBulkRawContacts, ParsedLead } from '@/lib/bulkContactParser';
+import { calculateLeadAge } from '@/lib/leadAge';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -140,6 +141,7 @@ export default function BulkImportModal({
           status: l.status || 'new',
           pitch_notes: l.pitch_notes,
           niche_id: selectedNicheId || null,
+          created_at: l.created_at ? new Date(l.created_at).toISOString() : new Date().toISOString(),
         })),
         niche_id: selectedNicheId || null,
       };
@@ -359,6 +361,7 @@ export default function BulkImportModal({
                       <th className="py-3 px-3">Phone</th>
                       <th className="py-3 px-3">Deal Value ($)</th>
                       <th className="py-3 px-3">Lead Score</th>
+                      <th className="py-3 px-3">Date / Age</th>
                       <th className="py-3 px-3">Notes & Source</th>
                       <th className="py-3 px-2 w-10 text-center">Action</th>
                     </tr>
@@ -440,6 +443,26 @@ export default function BulkImportModal({
                             </span>
                             {lead.lead_score}%
                           </span>
+                        </td>
+
+                        {/* Date & Calculated Age */}
+                        <td className="py-3 px-3 min-w-[125px]">
+                          <div className="space-y-1">
+                            <input
+                              type="date"
+                              value={lead.created_at}
+                              onChange={(e) => handleUpdateField(lead.id, 'created_at', e.target.value)}
+                              className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-slate-900 focus:outline-hidden py-0.5 text-[11px] font-mono text-slate-700"
+                            />
+                            {(() => {
+                              const age = calculateLeadAge(lead.created_at);
+                              return (
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-sm text-[9px] font-mono font-bold border ${age.badgeClasses}`}>
+                                  <span>{age.badgeText}</span>
+                                </span>
+                              );
+                            })()}
+                          </div>
                         </td>
 
                         {/* Notes */}

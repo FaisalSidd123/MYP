@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import AddNicheModal from '@/components/AddNicheModal';
+import { calculateLeadAge } from '@/lib/leadAge';
 
 interface AddContactModalProps {
   isOpen: boolean;
@@ -27,7 +28,8 @@ export default function AddContactModal({ isOpen, onClose, onSuccess, initialNic
     niche_id: initialNicheId || '',
     deal_value: '',
     pitch: '',
-    pitch_notes: ''
+    pitch_notes: '',
+    created_at: new Date().toISOString().slice(0, 10)
   });
 
   const [rawText, setRawText] = useState('');
@@ -115,7 +117,8 @@ export default function AddContactModal({ isOpen, onClose, onSuccess, initialNic
           niche_id: formData.niche_id || null,
           niche_name: selectedNicheObj ? selectedNicheObj.name : null,
           deal_value: Number(formData.deal_value) || 0,
-          pitch: pitchArray
+          pitch: pitchArray,
+          created_at: formData.created_at ? new Date(formData.created_at).toISOString() : new Date().toISOString()
         })
       });
       if (res.ok) {
@@ -131,7 +134,8 @@ export default function AddContactModal({ isOpen, onClose, onSuccess, initialNic
           niche_id: '',
           deal_value: '',
           pitch: '',
-          pitch_notes: ''
+          pitch_notes: '',
+          created_at: new Date().toISOString().slice(0, 10)
         });
       }
     } catch (err) {
@@ -341,6 +345,33 @@ export default function AddContactModal({ isOpen, onClose, onSuccess, initialNic
                   placeholder="Website, LinkedIn, Referral" 
                 />
               </div>
+            </div>
+
+            {/* Lead Arrival Date & Age in Days */}
+            <div className="p-3 bg-slate-50 border border-slate-200/90 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-bold text-slate-900 uppercase tracking-wider font-mono">
+                  Lead Arrival / Created Date
+                </label>
+                {(() => {
+                  const age = calculateLeadAge(formData.created_at);
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${age.badgeClasses}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${age.dotColor}`} />
+                      <span>{age.badgeText} ({age.label})</span>
+                    </span>
+                  );
+                })()}
+              </div>
+              <input 
+                type="date"
+                value={formData.created_at} 
+                onChange={e => setFormData({ ...formData, created_at: e.target.value })} 
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400 font-mono" 
+              />
+              <p className="text-[10px] text-slate-400">
+                Number of days is calculated automatically from this date to measure lead aging.
+              </p>
             </div>
 
             <div className="space-y-1">

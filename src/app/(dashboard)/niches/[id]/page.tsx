@@ -8,6 +8,7 @@ import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import EditNicheModal from '@/components/EditNicheModal';
 import BulkImportModal from '@/components/BulkImportModal';
+import { calculateLeadAge } from '@/lib/leadAge';
 
 interface NicheDetail {
   id: string;
@@ -33,7 +34,7 @@ export default function NicheDetailPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'recent' | 'value' | 'score' | 'name'>('recent');
+  const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'value' | 'score' | 'name'>('recent');
 
   // Modals
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
@@ -277,6 +278,19 @@ export default function NicheDetailPage() {
     };
   }, [leads, wonLeadsCount]);
 
+  const ageStats = useMemo(() => {
+    if (leads.length === 0) return { avgDaysOld: 0, fresh: 0, active: 0, aging: 0, stale: 0 };
+    const ages = leads.map((l) => calculateLeadAge(l.created_at));
+    const avgDaysOld = Math.round(ages.reduce((sum, a) => sum + a.daysOld, 0) / leads.length);
+    return {
+      avgDaysOld,
+      fresh: ages.filter((a) => a.status === 'fresh').length,
+      active: ages.filter((a) => a.status === 'active').length,
+      aging: ages.filter((a) => a.status === 'aging').length,
+      stale: ages.filter((a) => a.status === 'stale').length,
+    };
+  }, [leads]);
+
   // Filtered and Sorted Leads
   const filteredLeads = useMemo(() => {
     return leads
@@ -303,6 +317,7 @@ export default function NicheDetailPage() {
         );
       })
       .sort((a, b) => {
+        if (sortBy === 'oldest') return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
         if (sortBy === 'value') return (Number(b.deal_value) || 0) - (Number(a.deal_value) || 0);
         if (sortBy === 'score') return (Number(b.lead_score) || 0) - (Number(a.lead_score) || 0);
         if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
@@ -576,13 +591,44 @@ export default function NicheDetailPage() {
             onChange={(e: any) => setSortBy(e.target.value)}
             className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-xs focus:outline-none cursor-pointer"
           >
-            <option value="recent">Most Recent</option>
+            <option value="recent">Most Recent (Newest Date)</option>
+            <option value="oldest">Oldest Leads (Longest Waiting)</option>
             <option value="value">Highest Deal Value</option>
             <option value="score">Lead Quality Score</option>
             <option value="name">Alphabetical (A-Z)</option>
           </select>
         </div>
       </div>
+
+      {/* Pipeline Lead Age Analysis Banner */}
+      {leads.length > 0 && (
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 px-4 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-slate-500">history</span>
+            <span className="font-bold text-slate-900">Pipeline Lead Age Analysis:</span>
+            <span className="text-slate-600">
+              Average lead age is <strong className="text-slate-900 font-bold font-mono">{ageStats.avgDaysOld} days</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap text-[11px] font-mono">
+            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+              {ageStats.fresh} Fresh (≤3d)
+            </span>
+            <span className="px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 font-bold">
+              {ageStats.active} Active (4-14d)
+            </span>
+            <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+              {ageStats.aging} Aging (15-30d)
+            </span>
+            {ageStats.stale > 0 && (
+              <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                <span>{ageStats.stale} Stale (&gt;30d)</span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Leads Table Card */}
       <div className="bg-white border border-slate-200 rounded-3xl shadow-xs overflow-hidden">
@@ -618,6 +664,7 @@ export default function NicheDetailPage() {
                   <th className="py-3 px-4">Contact Info</th>
                   <th className="py-3 px-4">Deal Value</th>
                   <th className="py-3 px-4">Quality Score</th>
+                  <th className="py-3 px-4">Date Added & Age</th>
                   <th className="py-3 px-4">Stage / Status</th>
                   <th className="py-3 px-5 text-right">Actions</th>
                 </tr>
@@ -701,6 +748,28 @@ export default function NicheDetailPage() {
                             {score >= 75 ? 'Hot' : score >= 50 ? 'Warm' : 'Cool'}
                           </span>
                         </div>
+                      </td>
+
+                      {/* Date Added & Lead Age in Days */}
+                      <td className="py-3.5 px-4">
+                        {(() => {
+                          const age = calculateLeadAge(lead.created_at);
+                          return (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-800 font-semibold">
+                                <span className="material-symbols-outlined text-[13px] text-slate-400">calendar_today</span>
+                                <span>{age.formattedDate}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${age.badgeClasses}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${age.dotColor}`} />
+                                  <span>{age.badgeText}</span>
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">({age.label})</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Inline Quick Stage Selector */}

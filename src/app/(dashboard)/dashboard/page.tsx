@@ -7,6 +7,7 @@ import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import AddNicheModal from '@/components/AddNicheModal';
 import BulkImportModal from '@/components/BulkImportModal';
+import { calculateLeadAge } from '@/lib/leadAge';
 
 interface DashboardStats {
   totalContacts: number;
@@ -596,14 +597,23 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Footer Status */}
+                {/* Footer Status & Lead Age */}
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-semibold uppercase border ${getStatusBadge(lead.status)}`}>
                     {lead.status || 'new'}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : ''}
-                  </span>
+                  {(() => {
+                    const age = calculateLeadAge(lead.created_at);
+                    return (
+                      <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                        <span className="text-slate-500 font-medium">{age.formattedDate}</span>
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold border ${age.badgeClasses}`}>
+                          <span className={`w-1 h-1 rounded-full ${age.dotColor}`} />
+                          <span>{age.badgeText}</span>
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

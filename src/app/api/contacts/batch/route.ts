@@ -52,6 +52,7 @@ export async function POST(request: Request) {
         pitch: Array.isArray(lead.pitch) ? lead.pitch : [],
         pitch_notes: lead.pitch_notes?.trim() || null,
         avatar_url: lead.avatar_url || null,
+        created_at: lead.created_at ? new Date(lead.created_at).toISOString() : new Date().toISOString(),
       };
     });
 

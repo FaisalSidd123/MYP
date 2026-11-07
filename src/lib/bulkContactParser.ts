@@ -11,6 +11,7 @@ export interface ParsedLead {
   pitch_notes: string;
   raw_snippet: string;
   selected: boolean;
+  created_at: string;
 }
 
 /**
@@ -212,6 +213,7 @@ export function parseBulkRawContacts(
       pitch_notes: notesArr.join(' | ') || '',
       raw_snippet: trimmed,
       selected: true,
+      created_at: new Date().toISOString().slice(0, 10),
     });
   });
 

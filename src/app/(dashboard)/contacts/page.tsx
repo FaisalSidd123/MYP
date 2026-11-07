@@ -6,6 +6,7 @@ import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import AddNicheModal from '@/components/AddNicheModal';
 import BulkImportModal from '@/components/BulkImportModal';
+import { calculateLeadAge } from '@/lib/leadAge';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ContactsPage() {
@@ -21,6 +22,8 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterNiche, setFilterNiche] = useState<string>(searchParams.get('niche_id') || 'all');
+  const [filterAge, setFilterAge] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'value' | 'name'>('recent');
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || searchParams.get('q') || '');
   const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -158,19 +161,36 @@ export default function ContactsPage() {
     }).format(val || 0);
   };
 
-  // Combined Filtering: Status + Niche + Search Query
-  const filteredContacts = contacts.filter((c) => {
-    const matchesStatus = filterStatus === 'all' || c.status?.toLowerCase() === filterStatus;
-    const matchesNiche = filterNiche === 'all' || c.niche_id === filterNiche || c.niche_name?.toLowerCase() === filterNiche.toLowerCase();
-    const query = searchQuery.trim().toLowerCase();
-    const matchesSearch = !query ||
-      c.name?.toLowerCase().includes(query) ||
-      c.company?.toLowerCase().includes(query) ||
-      c.email?.toLowerCase().includes(query) ||
-      c.niche_name?.toLowerCase().includes(query);
+  // Combined Filtering: Status + Niche + Age + Search Query + Sorting
+  const filteredContacts = contacts
+    .filter((c) => {
+      const matchesStatus = filterStatus === 'all' || c.status?.toLowerCase() === filterStatus;
+      const matchesNiche = filterNiche === 'all' || c.niche_id === filterNiche || c.niche_name?.toLowerCase() === filterNiche.toLowerCase();
+      
+      const ageInfo = calculateLeadAge(c.created_at);
+      const matchesAge =
+        filterAge === 'all' ||
+        (filterAge === 'fresh' && ageInfo.status === 'fresh') ||
+        (filterAge === 'active' && ageInfo.status === 'active') ||
+        (filterAge === 'aging' && ageInfo.status === 'aging') ||
+        (filterAge === 'stale' && ageInfo.status === 'stale');
 
-    return matchesStatus && matchesNiche && matchesSearch;
-  });
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch = !query ||
+        c.name?.toLowerCase().includes(query) ||
+        c.company?.toLowerCase().includes(query) ||
+        c.email?.toLowerCase().includes(query) ||
+        c.phone?.toLowerCase().includes(query) ||
+        c.niche_name?.toLowerCase().includes(query);
+
+      return matchesStatus && matchesNiche && matchesAge && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'oldest') return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+      if (sortBy === 'value') return (Number(b.deal_value) || 0) - (Number(a.deal_value) || 0);
+      if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
 
   const totalPipelineVal = filteredContacts.reduce((sum, c) => sum + (Number(c.deal_value) || 0), 0);
   const wonCount = filteredContacts.filter(c => ['approved', 'completed'].includes(c.status?.toLowerCase())).length;
@@ -288,7 +308,7 @@ export default function ContactsPage() {
             <select
               value={filterNiche}
               onChange={e => setFilterNiche(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-400 font-medium w-full sm:w-48"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-400 font-medium w-full sm:w-44"
             >
               <option value="all">All Niches ({contacts.length})</option>
               {niches.map(n => (
@@ -296,6 +316,21 @@ export default function ContactsPage() {
                   {n.name} ({n.totalLeads ?? 0})
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* Sort By Dropdown */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs font-bold text-slate-600 font-mono uppercase whitespace-nowrap">Sort:</span>
+            <select
+              value={sortBy}
+              onChange={(e: any) => setSortBy(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-400 font-medium w-full sm:w-44"
+            >
+              <option value="recent">Most Recent Date</option>
+              <option value="oldest">Oldest Leads (Longest)</option>
+              <option value="value">Highest Deal Value</option>
+              <option value="name">Alphabetical (A-Z)</option>
             </select>
           </div>
 
@@ -327,7 +362,7 @@ export default function ContactsPage() {
               <button
                 key={tab.id}
                 onClick={() => setFilterStatus(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                   filterStatus === tab.id
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -341,6 +376,32 @@ export default function ContactsPage() {
           <span className="text-xs text-slate-400 font-mono whitespace-nowrap">
             Showing {filteredContacts.length} of {contacts.length}
           </span>
+        </div>
+
+        {/* Lead Age Filter Pills */}
+        <div className="pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto text-xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono whitespace-nowrap">Age Filter:</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { id: 'all', label: 'All Ages' },
+              { id: 'fresh', label: 'Fresh (≤3d)' },
+              { id: 'active', label: 'Active (4-14d)' },
+              { id: 'aging', label: 'Aging (15-30d)' },
+              { id: 'stale', label: 'Stale (>30d)' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setFilterAge(tab.id)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold tracking-tight transition-all whitespace-nowrap cursor-pointer ${
+                  filterAge === tab.id
+                    ? 'bg-indigo-700 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -422,6 +483,23 @@ export default function ContactsPage() {
                   </span>
                 </div>
 
+                {/* Date Added & Lead Age in Days */}
+                {(() => {
+                  const age = calculateLeadAge(contact.created_at);
+                  return (
+                    <div className="mb-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-700 font-mono">
+                        <span className="material-symbols-outlined text-[15px] text-slate-400">calendar_today</span>
+                        <span className="font-semibold">{age.formattedDate}</span>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${age.badgeClasses}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${age.dotColor}`} />
+                        <span>{age.badgeText}</span>
+                      </span>
+                    </div>
+                  );
+                })()}
+
                 <div className="space-y-1.5 mb-4 text-xs">
                   <div className="flex items-center gap-2 text-slate-600">
                     <span className="material-symbols-outlined text-[16px] text-slate-400">mail</span>
@@ -439,8 +517,8 @@ export default function ContactsPage() {
                   <span className={`w-1.5 h-1.5 rounded-full ${getStatusColor(contact.status)}`} />
                   <span>{contact.status || 'new'}</span>
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  {contact.created_at ? new Date(contact.created_at).toLocaleDateString() : ''}
+                <span className="text-[11px] text-slate-500 font-mono">
+                  {calculateLeadAge(contact.created_at).label}
                 </span>
               </div>
             </div>

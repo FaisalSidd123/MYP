@@ -52,7 +52,8 @@ export async function POST(request: Request) {
       lead_score,
       pitch,
       pitch_notes,
-      avatar_url
+      avatar_url,
+      created_at
     } = body;
     const user_id = authUserId;
 
@@ -89,7 +90,8 @@ export async function POST(request: Request) {
         lead_score: Number(lead_score) || 50,
         pitch: pitch || [],
         pitch_notes: pitch_notes || null,
-        avatar_url: avatar_url || null
+        avatar_url: avatar_url || null,
+        created_at: created_at ? new Date(created_at).toISOString() : new Date().toISOString()
       }])
       .select()
       .single();
@@ -149,7 +151,8 @@ export async function PUT(request: Request) {
       lead_score,
       pitch,
       pitch_notes,
-      avatar_url
+      avatar_url,
+      created_at
     } = body;
     const user_id = authUserId;
 
@@ -190,6 +193,7 @@ export async function PUT(request: Request) {
         pitch: pitch || [],
         pitch_notes,
         avatar_url,
+        ...(created_at ? { created_at: new Date(created_at).toISOString() } : {}),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
