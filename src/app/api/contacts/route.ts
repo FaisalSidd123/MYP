@@ -96,6 +96,29 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[/api/contacts POST Error]:', error.message);
+      // Fallback: If new migration columns are not yet added to 'clients' in Supabase, insert core fields
+      if (error.code === 'PGRST204' || error.message?.includes('column')) {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('clients')
+          .insert([{
+            user_id,
+            name: name.trim(),
+            email: email?.trim() || null,
+            phone: phone?.trim() || null,
+            company: company?.trim() || null,
+            source: source?.trim() || 'Direct Inbound',
+            status: status || 'new',
+            pitch: pitch || [],
+            pitch_notes: pitch_notes || null,
+            avatar_url: avatar_url || null
+          }])
+          .select()
+          .single();
+
+        if (!fallbackError && fallbackData) {
+          return NextResponse.json(fallbackData, { status: 201 });
+        }
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

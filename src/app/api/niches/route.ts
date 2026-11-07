@@ -87,6 +87,11 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[/api/niches POST Error]:', error.message);
+      if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
+        return NextResponse.json({
+          error: "Table 'niches' has not been created in Supabase yet. Please run the SQL migration in your Supabase SQL Editor."
+        }, { status: 400 });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
