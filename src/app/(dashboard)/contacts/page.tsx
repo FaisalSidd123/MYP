@@ -5,12 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import AddNicheModal from '@/components/AddNicheModal';
+import BulkImportModal from '@/components/BulkImportModal';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ContactsPage() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [isContactModalOpen, setContactModalOpen] = useState(false);
+  const [isBulkImportOpen, setBulkImportOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isNicheModalOpen, setIsNicheModalOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
@@ -176,6 +178,16 @@ export default function ContactsPage() {
 
   return (
     <div className="space-y-8">
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setBulkImportOpen(false)}
+        onSuccess={(count) => {
+          fetchContacts();
+          fetchNiches();
+          showToastMessage(`Imported ${count} leads successfully!`, 'success');
+        }}
+        initialNicheId={filterNiche !== 'all' ? filterNiche : undefined}
+      />
       <AddContactModal 
         isOpen={isContactModalOpen} 
         onClose={() => setContactModalOpen(false)} 
@@ -228,17 +240,24 @@ export default function ContactsPage() {
             Track client relationships, segment by niche vertical, and monitor deal valuations.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+          <button
+            onClick={() => setBulkImportOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[17px]">dynamic_feed</span>
+            <span>⚡ Bulk Raw Import</span>
+          </button>
           <button
             onClick={() => setIsNicheModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all"
+            className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-[17px] text-slate-500">category</span>
             <span>+ New Niche</span>
           </button>
           <button
             onClick={() => setContactModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all"
+            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-xs transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             <span>Add Lead</span>

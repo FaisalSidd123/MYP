@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import AddNicheModal from '@/components/AddNicheModal';
+import BulkImportModal from '@/components/BulkImportModal';
 
 interface DashboardStats {
   totalContacts: number;
@@ -75,6 +76,7 @@ export default function DashboardPage() {
   
   // Modals state
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [prefilledNicheId, setPrefilledNicheId] = useState<string>('');
   const [isAddNicheModalOpen, setIsAddNicheModalOpen] = useState(false);
   const [isEditContactModalOpen, setIsEditContactModalOpen] = useState(false);
@@ -189,6 +191,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Modals */}
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        onSuccess={() => fetchDashboardData(selectedNicheId)}
+        initialNicheId={selectedNicheId !== 'all' ? selectedNicheId : undefined}
+      />
       <AddContactModal
         isOpen={isAddLeadModalOpen}
         onClose={() => setIsAddLeadModalOpen(false)}
@@ -233,17 +241,24 @@ export default function DashboardPage() {
         </div>
 
         {/* Global Action Buttons */}
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+          <button
+            onClick={() => setIsBulkImportOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[17px]">dynamic_feed</span>
+            <span>⚡ Bulk Raw Import</span>
+          </button>
           <button
             onClick={() => setIsAddNicheModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs cursor-pointer"
           >
             <span className="material-symbols-outlined text-[17px] text-slate-500">category</span>
             <span>+ New Niche</span>
           </button>
           <button
             onClick={() => handleOpenAddLeadForNiche(selectedNicheId)}
-            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">person_add</span>
             <span>+ Add Lead / Contact</span>

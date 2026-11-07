@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import EditNicheModal from '@/components/EditNicheModal';
+import BulkImportModal from '@/components/BulkImportModal';
 
 interface NicheDetail {
   id: string;
@@ -36,6 +37,7 @@ export default function NicheDetailPage() {
 
   // Modals
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isEditNicheModalOpen, setIsEditNicheModalOpen] = useState(false);
   const [isEditLeadModalOpen, setIsEditLeadModalOpen] = useState(false);
   const [selectedLeadForEdit, setSelectedLeadForEdit] = useState<any>(null);
@@ -359,6 +361,16 @@ export default function NicheDetailPage() {
       )}
 
       {/* Modals */}
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        onSuccess={(count) => {
+          fetchNicheAndLeads();
+          showToast(`Imported ${count} leads into ${niche.name}!`);
+        }}
+        initialNicheId={niche.id}
+      />
+
       <AddContactModal
         isOpen={isAddLeadModalOpen}
         onClose={() => setIsAddLeadModalOpen(false)}
@@ -434,6 +446,14 @@ export default function NicheDetailPage() {
             title="Delete this Niche"
           >
             <span className="material-symbols-outlined text-[17px]">delete</span>
+          </button>
+
+          <button
+            onClick={() => setIsBulkImportOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px]">dynamic_feed</span>
+            <span>Bulk Raw Import</span>
           </button>
 
           <button
