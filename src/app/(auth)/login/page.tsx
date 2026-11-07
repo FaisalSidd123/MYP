@@ -2,7 +2,7 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -10,8 +10,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email address first to reset your password.');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    try {
+      if (auth) {
+        await sendPasswordResetEmail(auth, email.trim());
+        setSuccess('Password reset link has been sent to your email.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email.');
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,20 +73,28 @@ export default function LoginPage() {
         
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs mb-4">
-            <span className="material-symbols-outlined text-[22px]">hub</span>
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center shadow-xs mb-3 font-mono font-black text-base">
+            <span className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+              MYP
+            </span>
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-headline)" }}>
-            Welcome back
+            Welcome back to MYP
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Sign in to manage your contacts and pipeline.
+          <p className="text-xs text-slate-500 mt-1 font-medium">
+            Manage Your Priorities · Smart Client CRM
           </p>
         </div>
 
         {error && (
           <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+            {success}
           </div>
         )}
 
@@ -94,9 +120,13 @@ export default function LoginPage() {
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">
                 Password
               </label>
-              <Link className="text-[11px] font-medium text-slate-500 hover:text-slate-900 transition-colors" href="#">
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                className="text-[11px] font-medium text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+              >
                 Forgot password?
-              </Link>
+              </button>
             </div>
             <input
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-400 font-mono"

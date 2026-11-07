@@ -73,15 +73,17 @@ export default function HomePage() {
             
             {/* Brand Logo */}
             <Link href="/" className="flex items-center gap-3 group shrink-0">
-              <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-sm shadow-xs">
-                <span className="material-symbols-outlined text-[18px]">hub</span>
+              <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center font-mono font-black text-xs shadow-xs transition-transform group-hover:scale-105">
+                <span className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+                  MYP
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[16px] font-bold text-slate-900 tracking-tight leading-none" style={{ fontFamily: "var(--font-headline)" }}>
-                  ContactHub
+                <span className="text-[17px] font-extrabold text-slate-900 tracking-tight leading-none" style={{ fontFamily: "var(--font-headline)" }}>
+                  MYP
                 </span>
-                <span className="text-[10px] text-slate-500 font-mono tracking-wider uppercase mt-0.5">
-                  Management Suite
+                <span className="text-[10px] text-slate-500 font-medium tracking-tight mt-0.5">
+                  Manage Your Priorities
                 </span>
               </div>
             </Link>
@@ -162,7 +164,7 @@ export default function HomePage() {
               Test the parser with your own contact notes.
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed font-normal">
-              Click a scenario below or paste any unstructured string to see how ContactHub extracts clean fields and maps records directly into your CRM.
+              Click a scenario below or paste any unstructured string to see how MYP extracts clean fields and maps records directly into your CRM.
             </p>
           </div>
 
@@ -654,7 +656,7 @@ export default function HomePage() {
       </section>
 
       {/* ═════════════════════════════════════════════════════════════════
-          SECTION 5: SPREADSHEET CHAOS VS CONTACTHUB (Pure White Background)
+          SECTION 5: SPREADSHEET CHAOS VS MYP (Pure White Background)
       ═════════════════════════════════════════════════════════════════ */}
       <section className="relative py-24 px-4 sm:px-6 lg:px-8 bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto">
@@ -664,7 +666,7 @@ export default function HomePage() {
               The Reality Check
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3" style={{ fontFamily: "var(--font-headline)" }}>
-              The spreadsheet grind vs ContactHub
+              The spreadsheet grind vs MYP
             </h2>
             <p className="text-sm text-slate-600">
               Compare the friction of traditional data entry with automated intelligence.
@@ -710,13 +712,13 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* The ContactHub Way */}
+            {/* The MYP Way */}
             <div className="rounded-2xl bg-emerald-50/50 border border-emerald-300 p-6 sm:p-8 flex flex-col justify-between shadow-xs">
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
                   <span className="text-xs font-mono uppercase tracking-wider text-emerald-900 font-bold">
-                    THE CONTACTHUB FLOW
+                    THE MYP (MANAGE YOUR PRIORITIES) FLOW
                   </span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-4">Zero Friction, Instant Clarity</h3>
@@ -841,7 +843,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                quote: "ContactHub completely replaced our chaotic Google Sheets. I just dump WhatsApp voice note transcriptions into it and within a second it routes to my Kanban.",
+                quote: "MYP completely replaced our chaotic Google Sheets. I just dump WhatsApp voice note transcriptions into it and within a second it routes to my Kanban.",
                 name: "Marcus Sterling",
                 role: "Founder & Managing Director",
                 company: "Sterling Advisory Group",
@@ -857,7 +859,7 @@ export default function HomePage() {
                 bg: "bg-indigo-50 text-indigo-900 border border-indigo-200",
               },
               {
-                quote: "I met 45 founders at SaaStr. Took 5 minutes to paste all their business cards and signatures into ContactHub. All 45 had follow-up appointments scheduled immediately.",
+                quote: "I met 45 founders at SaaStr. Took 5 minutes to paste all their business cards and signatures into MYP. All 45 had follow-up appointments scheduled immediately.",
                 name: "Liam O'Connor",
                 role: "Principal Investor",
                 company: "Horizon Ventures",
@@ -946,14 +948,16 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-xs">
-              <span className="material-symbols-outlined text-[16px]">hub</span>
+            <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center font-mono font-black text-xs shadow-xs">
+              <span className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+                MYP
+              </span>
             </div>
             <div>
-              <span className="text-sm font-bold text-slate-900" style={{ fontFamily: "var(--font-headline)" }}>
-                ContactHub
+              <span className="text-sm font-extrabold text-slate-900" style={{ fontFamily: "var(--font-headline)" }}>
+                MYP
               </span>
-              <span className="text-slate-500 text-xs ml-2">© 2026 ContactHub Inc. All rights reserved.</span>
+              <span className="text-slate-500 text-xs ml-2">© 2026 MYP — Manage Your Priorities. All rights reserved.</span>
             </div>
           </div>
 

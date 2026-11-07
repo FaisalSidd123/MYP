@@ -60,14 +60,16 @@ export default function RegisterPage() {
         
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs mb-4">
-            <span className="material-symbols-outlined text-[22px]">hub</span>
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-white flex items-center justify-center shadow-xs mb-3 font-mono font-black text-base">
+            <span className="bg-gradient-to-br from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+              MYP
+            </span>
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight" style={{ fontFamily: "var(--font-headline)" }}>
             Create an Account
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Get started with ContactHub in seconds.
+          <p className="text-xs text-slate-500 mt-1 font-medium">
+            Get started with MYP · Manage Your Priorities in seconds.
           </p>
         </div>
 

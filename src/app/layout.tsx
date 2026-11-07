@@ -4,8 +4,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ContactHub | Management Suite",
-  description: "Modern, visually stunning Contact Manager web application.",
+  title: "MYP | Manage Your Priorities",
+  description: "Manage Your Priorities (MYP) — Intelligent client pipeline management, niche market verticals, and task execution.",
 };
 
 export default function RootLayout({

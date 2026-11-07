@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     // Create an otpauth URL for apps like Google Authenticator
     const otpauth = generateURI({
       strategy: 'totp',
-      issuer: 'ContactHub',
+      issuer: 'MYP',
       label: email || `User_${authUserId.substring(0, 5)}`,
       secret
     });

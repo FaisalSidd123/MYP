@@ -1,6 +1,7 @@
 /* eslint-disable */
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import AddNicheModal from '@/components/AddNicheModal';
@@ -8,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function ContactsPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [isContactModalOpen, setContactModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isNicheModalOpen, setIsNicheModalOpen] = useState(false);
@@ -16,9 +18,16 @@ export default function ContactsPage() {
   const [niches, setNiches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterNiche, setFilterNiche] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterNiche, setFilterNiche] = useState<string>(searchParams.get('niche_id') || 'all');
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || searchParams.get('q') || '');
   const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    const q = searchParams.get('search') || searchParams.get('q');
+    if (q !== null) setSearchQuery(q);
+    const n = searchParams.get('niche_id');
+    if (n !== null) setFilterNiche(n);
+  }, [searchParams]);
 
   const fetchNiches = async () => {
     if (!user) return;

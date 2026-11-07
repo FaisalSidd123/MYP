@@ -124,7 +124,7 @@ export default function Hero({ user }: HeroProps) {
               style={{ fontFamily: "var(--font-body)" }}
             >
               Stop wasting hours manually re-typing client information. Paste any raw email signature,
-              WhatsApp dump, or meeting memo. ContactHub extracts clean contact fields, organizes your
+              WhatsApp dump, or meeting memo. MYP (Manage Your Priorities) extracts clean contact fields, organizes your
               Kanban pipeline, and schedules follow-ups in seconds.
             </p>
 
@@ -320,12 +320,12 @@ export default function Hero({ user }: HeroProps) {
                       <span className="text-xs font-mono font-bold text-slate-900">
                         {activePreset.extracted.budget}
                       </span>
-                      <button
-                        type="button"
-                        className="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs"
+                      <Link
+                        href={user ? "/contacts" : "/register"}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs inline-flex items-center gap-1"
                       >
-                        Push to Board +
-                      </button>
+                        Push to CRM →
+                      </Link>
                     </div>
                   </div>
                 </motion.div>
