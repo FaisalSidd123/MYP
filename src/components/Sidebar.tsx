@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import MypLogo from "@/components/brand/MypLogo";
+import { isUserAdmin } from "@/lib/adminCheck";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const isAdmin = isUserAdmin(user?.email);
 
   const navLinks = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
@@ -44,6 +46,31 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Admin Command Center Link */}
+        {isAdmin && (
+          <div className="pt-3 mt-3 border-t border-slate-100 space-y-1">
+            <span className="px-3.5 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+              Administration
+            </span>
+            <Link
+              href="/admin"
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                pathname.startsWith("/admin")
+                  ? "bg-purple-950 text-white shadow-xs"
+                  : "text-purple-800 bg-purple-50 hover:bg-purple-100/80 border border-purple-200/60"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-[19px]">admin_panel_settings</span>
+                <span>Admin Portal</span>
+              </div>
+              <span className="px-1.5 py-0.2 rounded-sm bg-purple-200 text-purple-900 text-[9px] font-mono font-extrabold">
+                ADMIN
+              </span>
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Footer / Utilities */}

@@ -3,11 +3,13 @@ import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import NotificationsDropdown from "./NotificationsDropdown";
+import { isUserAdmin } from "@/lib/adminCheck";
 
 export default function TopNavBar() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const isAdmin = isUserAdmin(user?.email);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +51,14 @@ export default function TopNavBar() {
         <div className="h-6 w-[1px] bg-slate-200 mx-1" />
         <div className="flex items-center gap-3 pl-1">
           <div className="text-right">
-            <p className="text-xs font-bold text-slate-900 leading-tight">{user?.displayName || "Active User"}</p>
+            <div className="flex items-center justify-end gap-1.5">
+              <p className="text-xs font-bold text-slate-900 leading-tight">{user?.displayName || "Active User"}</p>
+              {isAdmin && (
+                <span className="px-1.5 py-0.2 rounded-sm bg-purple-100 text-purple-900 text-[9px] font-mono font-bold">
+                  ADMIN
+                </span>
+              )}
+            </div>
             <p className="text-[10px] text-slate-400 font-mono mt-0.5">{user?.email || "MYP Workspace"}</p>
           </div>
           <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs font-mono">

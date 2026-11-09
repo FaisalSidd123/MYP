@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/authMiddleware';
 import { supabase } from '@/lib/supabase';
+import { isUserAdmin } from '@/lib/adminAuth';
 
 export async function POST(request: Request) {
   const { uid: authUserId, email: authEmail, error: authError } = await verifyAuth(request);
@@ -13,20 +15,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required user fields' }, { status: 400 });
     }
 
+    const effectiveEmail = authEmail || user.email;
+    const shouldBeAdmin = isUserAdmin(effectiveEmail);
+
+    const upsertPayload: Record<string, any> = {
+      id: authUserId,
+      email: effectiveEmail,
+      display_name: user.display_name || null,
+      avatar_url: user.avatar_url || null,
+      last_login: new Date().toISOString(),
+    };
+
+    if (shouldBeAdmin) {
+      upsertPayload.role = 'admin';
+    }
+
     // Upsert the user into the Supabase 'users' table
     const { data, error } = await supabase
       .from('users')
-      .upsert(
-        {
-          id: authUserId,
-          email: authEmail || user.email,
-          display_name: user.display_name || null,
-          avatar_url: user.avatar_url || null,
-          last_login: new Date().toISOString(),
-          // role and is_active will use DB defaults or preserve existing on conflict
-        },
-        { onConflict: 'id' }
-      )
+      .upsert(upsertPayload, { onConflict: 'id' })
       .select()
       .single();
 

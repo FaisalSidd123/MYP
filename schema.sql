@@ -97,3 +97,13 @@ CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON public.tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON public.tasks(status);
 CREATE INDEX IF NOT EXISTS idx_schedules_user_id ON public.schedules(user_id);
 CREATE INDEX IF NOT EXISTS idx_schedules_start_time ON public.schedules(start_time);
+
+-- 6. Admin Role & User Management Migration Helpers
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+
+-- Automatically elevate owner goodfaisal to admin role
+UPDATE public.users 
+SET role = 'admin' 
+WHERE email ILIKE '%goodfaisal%';
+
