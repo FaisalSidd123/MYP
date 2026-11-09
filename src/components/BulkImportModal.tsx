@@ -12,13 +12,31 @@ interface BulkImportModalProps {
   initialNicheId?: string;
 }
 
-const SAMPLE_CAKE_LEADS = `Artistra | Customized Cakes
-923242765621
-4.9(31)
-
-Bake N Cake by Sarah
-3423326743
-4.9(33)`;
+const SAMPLE_CAKE_LEADS = `Bake N Cake by Sarah\t3423326743\twebsite but only contact info\t4.9(33)
+Once Upon a Cake\t3312286074\tserver down\t4.9(150) · Bakery
+OccasionsCakes\t3360303017\tno website\t4.8(121)
+Delicate Cake\t0300-3589513\tno website\t4.8(13)
+Delish Star Sweets and Bakers\t3012049950\tno website\t4.2(625)
+Artistra | Customized Cakes\t923242765621\tno website\t4.9(31)
+LaFornai\t3322826000\tno website\t5.0(15)
+Baking Nest\t3352639681\tno website\t5.0(13)
+JC Misquita Bakery\t2132790616\tno website\t4.2(435)
+Nice bakery\t3142017365\tno website\t4.0(818)
+Sara's Yummylicious (Home Made)\t0334 3036562\tno website\t5.0(28)
+Ideal Bakery Hill Park\t0336 0688786.\tno website\t4.2(1.3K)
+Al Noor Cake house\t3417608210\tno website\t5.0(6)
+Ruffy Tuffy The Baking Room\t92 317 2401753\tno website\t5.0(47)
+Sweets By Roviba\t3301371377\tno website\t5.0(9)
+Hatimi Bakers Anjarwalas\t2136635302\tno website\t4.2(299)
+Cakesaaz | Karachi\t3116757478\tno website\t5.0(4)
+A.A Bakers\t3168471896\tno website\t5.0(7)
+New Crispo Bakery\t3094284801\tno website\t4.2(652)
+M A Cakes Delight\t3368515495\tno website\t4.9(27)
+Fiya's Kitchen\t3000363280\tno website\t5.0(8)
+Sobieezz\t0333 3921391\tno website\t5.0(1)
+Sadia bakes\t3009256606\tno website\t5.0(2)
+Farzan Sweets and Bakers\t2136377924\tno website\t4.2(44)
+Pastelería\t92 311 1771907\tno website\t5.0(6)`;
 
 export default function BulkImportModal({
   isOpen,
@@ -284,15 +302,15 @@ export default function BulkImportModal({
                 Raw Bulk Leads Input
               </span>
               <span className="text-[11px] font-normal text-slate-400">
-                Paste names, phone numbers, ratings or addresses separated by line breaks
+                Paste tabular spreadsheet rows (Google Sheets / Excel) or multi-line lead blocks
               </span>
             </div>
 
             <textarea
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              placeholder={`Paste any multi-lead block, for example:\n\nArtistra | Customized Cakes\n923242765621\n4.9(31)\n\nBake N Cake by Sarah\n3423326743\n4.9(33)`}
-              rows={6}
+              placeholder={`Paste spreadsheet rows or multi-line blocks, for example:\n\n1. Tabbed rows (Excel / Sheets):\nBake N Cake by Sarah\t3423326743\twebsite but only contact info\t4.9(33)\nArtistra | Customized Cakes\t923242765621\tno website\t4.9(31)\n\n2. Multi-line blocks:\nArtistra | Customized Cakes\n923242765621\n4.9(31)`}
+              rows={7}
               className="w-full bg-slate-50/70 border border-slate-200 rounded-2xl p-4 text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-slate-900/10 focus:bg-white transition-all resize-y"
             />
           </div>
