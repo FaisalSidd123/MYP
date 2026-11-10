@@ -6,7 +6,15 @@ import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import AddNicheModal from '@/components/AddNicheModal';
 import BulkImportModal from '@/components/BulkImportModal';
+import ScenarioNoteModal from '@/components/leads/ScenarioNoteModal';
 import { calculateLeadAge } from '@/lib/leadAge';
+import {
+  LEAD_STATUSES,
+  LeadStatusKey,
+  normalizeLeadStatus,
+  getLeadStatusMeta,
+  isLeadWon,
+} from '@/lib/leadStatus';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ContactsPage() {
@@ -16,6 +24,8 @@ export default function ContactsPage() {
   const [isBulkImportOpen, setBulkImportOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isNicheModalOpen, setIsNicheModalOpen] = useState(false);
+  const [isScenarioModalOpen, setIsScenarioModalOpen] = useState(false);
+  const [selectedLeadForScenario, setSelectedLeadForScenario] = useState<any>(null);
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [contacts, setContacts] = useState<any[]>([]);
   const [niches, setNiches] = useState<any[]>([]);
@@ -161,10 +171,50 @@ export default function ContactsPage() {
     }).format(val || 0);
   };
 
+  const handleSaveScenarioNote = async (
+    leadId: string,
+    newStatus: LeadStatusKey,
+    scenarioNotes: string
+  ): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/contacts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          id: leadId,
+          status: newStatus,
+          pitch_notes: scenarioNotes,
+        })
+      });
+
+      if (res.ok) {
+        setContacts((prev) =>
+          prev.map((c) =>
+            c.id === leadId
+              ? { ...c, status: newStatus, pitch_notes: scenarioNotes }
+              : c
+          )
+        );
+        showToastMessage('Current scenario & next steps updated', 'success');
+        return true;
+      } else {
+        const err = await res.json();
+        showToastMessage(err.error || 'Failed to update scenario', 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      showToastMessage('Network error while saving scenario', 'error');
+      return false;
+    }
+  };
+
   // Combined Filtering: Status + Niche + Age + Search Query + Sorting
   const filteredContacts = contacts
     .filter((c) => {
-      const matchesStatus = filterStatus === 'all' || c.status?.toLowerCase() === filterStatus;
+      const matchesStatus = filterStatus === 'all' || normalizeLeadStatus(c.status) === filterStatus;
       const matchesNiche = filterNiche === 'all' || c.niche_id === filterNiche || c.niche_name?.toLowerCase() === filterNiche.toLowerCase();
       
       const ageInfo = calculateLeadAge(c.created_at);
@@ -193,7 +243,7 @@ export default function ContactsPage() {
     });
 
   const totalPipelineVal = filteredContacts.reduce((sum, c) => sum + (Number(c.deal_value) || 0), 0);
-  const wonCount = filteredContacts.filter(c => ['approved', 'completed'].includes(c.status?.toLowerCase())).length;
+  const wonCount = filteredContacts.filter(c => isLeadWon(c.status)).length;
   const conversionRate = filteredContacts.length > 0 ? Math.round((wonCount / filteredContacts.length) * 100) : 0;
 
   return (
@@ -232,6 +282,15 @@ export default function ContactsPage() {
         }}
         contact={selectedContact}
         onSave={handleUpdateContact}
+      />
+      <ScenarioNoteModal
+        isOpen={isScenarioModalOpen}
+        onClose={() => {
+          setIsScenarioModalOpen(false);
+          setSelectedLeadForScenario(null);
+        }}
+        lead={selectedLeadForScenario}
+        onSave={handleSaveScenarioNote}
       />
 
       {/* Toast Notification */}
@@ -351,24 +410,28 @@ export default function ContactsPage() {
         {/* Status Filter Pills */}
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 overflow-x-auto">
           <div className="flex items-center gap-1.5">
-            {[
-              { id: 'all', label: 'All Leads' },
-              { id: 'new', label: 'New' },
-              { id: 'contacted', label: 'Contacted' },
-              { id: 'negotiation', label: 'Negotiation' },
-              { id: 'approved', label: 'Approved' },
-              { id: 'completed', label: 'Completed' },
-            ].map((tab) => (
+            <button
+              onClick={() => setFilterStatus('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                filterStatus === 'all'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              All Leads
+            </button>
+            {LEAD_STATUSES.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setFilterStatus(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                   filterStatus === tab.id
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                {tab.label}
+                <span className={`w-1.5 h-1.5 rounded-full ${tab.dotColor}`} />
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
@@ -500,7 +563,7 @@ export default function ContactsPage() {
                   );
                 })()}
 
-                <div className="space-y-1.5 mb-4 text-xs">
+                <div className="space-y-1.5 mb-3 text-xs">
                   <div className="flex items-center gap-2 text-slate-600">
                     <span className="material-symbols-outlined text-[16px] text-slate-400">mail</span>
                     <span className="truncate">{contact.email || 'No email provided'}</span>
@@ -510,13 +573,62 @@ export default function ContactsPage() {
                     <span className="truncate font-mono">{contact.phone || 'No phone provided'}</span>
                   </div>
                 </div>
+
+                {/* Current Scenario Notes */}
+                {contact.pitch_notes ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLeadForScenario(contact);
+                      setIsScenarioModalOpen(true);
+                    }}
+                    className="mb-3 w-full text-left p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 hover:bg-indigo-100/70 transition-all cursor-pointer group"
+                    title="Click to update scenario notes"
+                  >
+                    <div className="flex items-start gap-1.5">
+                      <span className="material-symbols-outlined text-[15px] text-indigo-600 shrink-0 mt-0.5">chat_bubble</span>
+                      <p className="text-[11px] text-slate-800 line-clamp-2 font-medium leading-relaxed group-hover:text-indigo-950">
+                        {contact.pitch_notes}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-indigo-600 font-semibold mt-1 flex items-center gap-0.5 opacity-80 group-hover:opacity-100">
+                      <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                      Update scenario
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLeadForScenario(contact);
+                      setIsScenarioModalOpen(true);
+                    }}
+                    className="mb-3 w-full text-left px-2.5 py-1.5 rounded-xl border border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/60 text-[11px] text-slate-400 hover:text-indigo-600 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[14px] text-indigo-500">add_comment</span>
+                    <span>+ Set scenario (e.g. 2 weeks)</span>
+                  </button>
+                )}
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px] font-semibold uppercase">
-                  <span className={`w-1.5 h-1.5 rounded-full ${getStatusColor(contact.status)}`} />
-                  <span>{contact.status || 'new'}</span>
-                </span>
+                {(() => {
+                  const meta = getLeadStatusMeta(contact.status);
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLeadForScenario(contact);
+                        setIsScenarioModalOpen(true);
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-mono text-[10px] font-bold cursor-pointer transition-all ${meta.badgeClasses}`}
+                      title="Click to change stage or scenario"
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor}`} />
+                      <span>{meta.shortLabel}</span>
+                    </button>
+                  );
+                })()}
                 <span className="text-[11px] text-slate-500 font-mono">
                   {calculateLeadAge(contact.created_at).label}
                 </span>

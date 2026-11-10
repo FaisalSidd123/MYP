@@ -191,7 +191,7 @@ export async function PUT(request: Request) {
         deal_value: Number(deal_value) || 0,
         lead_score: Number(lead_score) || 50,
         pitch: pitch || [],
-        pitch_notes,
+        pitch_notes: pitch_notes ?? body.scenario_notes ?? null,
         avatar_url,
         ...(created_at ? { created_at: new Date(created_at).toISOString() } : {}),
         updated_at: new Date().toISOString()
@@ -203,6 +203,51 @@ export async function PUT(request: Request) {
 
     if (error) {
       console.error('[/api/contacts PUT Error]:', error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+// PATCH - Partially update lead status, scenario notes, or quick fields
+export async function PATCH(request: Request) {
+  const { uid: authUserId, error: authError } = await verifyAuth(request);
+  if (authError) return authError;
+
+  try {
+    const body = await request.json();
+    const { id, status, pitch_notes, scenario_notes, deal_value, lead_score } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing contact id' }, { status: 400 });
+    }
+
+    const updates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (status !== undefined) updates.status = status;
+    if (pitch_notes !== undefined) {
+      updates.pitch_notes = pitch_notes;
+    } else if (scenario_notes !== undefined) {
+      updates.pitch_notes = scenario_notes;
+    }
+    if (deal_value !== undefined) updates.deal_value = Number(deal_value) || 0;
+    if (lead_score !== undefined) updates.lead_score = Number(lead_score) || 50;
+
+    const { data, error } = await supabase
+      .from('clients')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', authUserId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[/api/contacts PATCH Error]:', error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { calculateLeadAge } from '@/lib/leadAge';
+import { LEAD_STATUSES, normalizeLeadStatus, QUICK_SCENARIO_PRESETS, getLeadStatusMeta } from '@/lib/leadStatus';
 
 interface EditContactModalProps {
   isOpen: boolean;
@@ -240,20 +241,31 @@ export default function EditContactModal({ isOpen, onClose, contact, onSave }: E
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">
-              Lead Stage / Status
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">
+                Lead Stage / Status
+              </label>
+              {(() => {
+                const meta = getLeadStatusMeta(formData.status);
+                return (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${meta.badgeClasses}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor}`} />
+                    <span>{meta.shortLabel}</span>
+                  </span>
+                );
+              })()}
+            </div>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400"
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-slate-400 cursor-pointer font-medium"
             >
-              <option value="new">New Lead</option>
-              <option value="contacted">Contacted</option>
-              <option value="negotiation">In Negotiation</option>
-              <option value="approved">Approved</option>
-              <option value="completed">Completed / Won</option>
+              {LEAD_STATUSES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label} ({s.description})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -318,17 +330,40 @@ export default function EditContactModal({ isOpen, onClose, contact, onSave }: E
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono mb-1">
-              Pitch Notes
-            </label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">
+                Current Scenario & Next Steps Notes
+              </label>
+              <span className="text-[10px] text-slate-400">e.g. Next call date, demo status</span>
+            </div>
+
+            {/* Quick Scenario Preset Chips */}
+            <div className="flex flex-wrap gap-1.5 py-1">
+              {QUICK_SCENARIO_PRESETS.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev: any) => ({
+                      ...prev,
+                      pitch_notes: prev.pitch_notes ? `${prev.pitch_notes.trim()}\n${preset.text}` : preset.text,
+                    }));
+                  }}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 text-[10px] font-medium text-slate-600 transition-colors cursor-pointer"
+                >
+                  + {preset.label}
+                </button>
+              ))}
+            </div>
+
             <textarea
               name="pitch_notes"
               value={formData.pitch_notes}
               onChange={handleChange}
               rows={3}
-              placeholder="Strategy notes, meeting notes, action items..."
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none"
+              placeholder="What is the current scenario? (e.g. 'He is looking forward to it after two weeks', 'Sent portfolio video, waiting on CEO decision')..."
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 resize-none font-sans"
             />
           </div>
 

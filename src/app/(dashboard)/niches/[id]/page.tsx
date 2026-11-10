@@ -8,7 +8,15 @@ import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
 import EditNicheModal from '@/components/EditNicheModal';
 import BulkImportModal from '@/components/BulkImportModal';
+import ScenarioNoteModal from '@/components/leads/ScenarioNoteModal';
 import { calculateLeadAge } from '@/lib/leadAge';
+import {
+  LEAD_STATUSES,
+  LeadStatusKey,
+  normalizeLeadStatus,
+  getLeadStatusMeta,
+  isLeadWon,
+} from '@/lib/leadStatus';
 
 interface NicheDetail {
   id: string;
@@ -42,6 +50,8 @@ export default function NicheDetailPage() {
   const [isEditNicheModalOpen, setIsEditNicheModalOpen] = useState(false);
   const [isEditLeadModalOpen, setIsEditLeadModalOpen] = useState(false);
   const [selectedLeadForEdit, setSelectedLeadForEdit] = useState<any>(null);
+  const [isScenarioModalOpen, setIsScenarioModalOpen] = useState(false);
+  const [selectedLeadForScenario, setSelectedLeadForScenario] = useState<any>(null);
 
   // Status updating indicator
   const [updatingLeadId, setUpdatingLeadId] = useState<string | null>(null);
@@ -106,10 +116,10 @@ export default function NicheDetailPage() {
       if (!currentLead) return;
 
       const res = await fetch('/api/contacts', {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          ...currentLead,
+          id: leadId,
           status: newStatus
         })
       });
@@ -118,17 +128,8 @@ export default function NicheDetailPage() {
         setLeads((prev) =>
           prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
         );
-        showToast(`Lead status updated to ${newStatus.toUpperCase()}`);
-        // Refresh niche stats
-        const token2 = await user.getIdToken();
-        const nicheRes = await fetch('/api/niches', {
-          headers: { 'Authorization': `Bearer ${token2}` }
-        });
-        if (nicheRes.ok) {
-          const nichesData = await nicheRes.json();
-          const found = (nichesData || []).find((n: any) => n.id === nicheId);
-          if (found) setNiche(found);
-        }
+        const meta = getLeadStatusMeta(newStatus);
+        showToast(`Lead moved to ${meta.label}`);
       } else {
         const err = await res.json();
         showToast(err.error || 'Failed to update status', 'error');
@@ -136,6 +137,51 @@ export default function NicheDetailPage() {
     } catch (err) {
       console.error(err);
       showToast('Network error while updating status', 'error');
+    } finally {
+      setUpdatingLeadId(null);
+    }
+  };
+
+  // Handle saving current scenario notes and stage from modal
+  const handleSaveScenarioNote = async (
+    leadId: string,
+    newStatus: LeadStatusKey,
+    scenarioNotes: string
+  ): Promise<boolean> => {
+    if (!user) return false;
+    setUpdatingLeadId(leadId);
+
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/contacts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          id: leadId,
+          status: newStatus,
+          pitch_notes: scenarioNotes,
+        })
+      });
+
+      if (res.ok) {
+        setLeads((prev) =>
+          prev.map((l) =>
+            l.id === leadId
+              ? { ...l, status: newStatus, pitch_notes: scenarioNotes }
+              : l
+          )
+        );
+        showToast('Current scenario & next steps updated');
+        return true;
+      } else {
+        const err = await res.json();
+        showToast(err.error || 'Failed to update scenario', 'error');
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Network error while saving scenario', 'error');
+      return false;
     } finally {
       setUpdatingLeadId(null);
     }
@@ -254,7 +300,7 @@ export default function NicheDetailPage() {
   }, [leads]);
 
   const wonLeadsCount = useMemo(() => {
-    return leads.filter((l) => ['approved', 'completed', 'won'].includes(l.status?.toLowerCase())).length;
+    return leads.filter((l) => isLeadWon(l.status)).length;
   }, [leads]);
 
   const conversionRate = useMemo(() => {
@@ -268,15 +314,14 @@ export default function NicheDetailPage() {
   }, [leads]);
 
   const stageCounts = useMemo(() => {
-    return {
+    const counts: Record<string, number> = {
       all: leads.length,
-      new: leads.filter((l) => l.status?.toLowerCase() === 'new').length,
-      contacted: leads.filter((l) => l.status?.toLowerCase() === 'contacted').length,
-      negotiation: leads.filter((l) => l.status?.toLowerCase() === 'negotiation').length,
-      won: wonLeadsCount,
-      inactive: leads.filter((l) => ['inactive', 'lost'].includes(l.status?.toLowerCase())).length,
     };
-  }, [leads, wonLeadsCount]);
+    LEAD_STATUSES.forEach((s) => {
+      counts[s.id] = leads.filter((l) => normalizeLeadStatus(l.status) === s.id).length;
+    });
+    return counts;
+  }, [leads]);
 
   const ageStats = useMemo(() => {
     if (leads.length === 0) return { avgDaysOld: 0, fresh: 0, active: 0, aging: 0, stale: 0 };
@@ -296,14 +341,10 @@ export default function NicheDetailPage() {
     return leads
       .filter((lead) => {
         // Status filter
-        if (statusFilter === 'all') return true;
-        if (statusFilter === 'won') {
-          return ['approved', 'completed', 'won'].includes(lead.status?.toLowerCase());
+        if (statusFilter !== 'all') {
+          if (normalizeLeadStatus(lead.status) !== statusFilter) return false;
         }
-        if (statusFilter === 'inactive') {
-          return ['inactive', 'lost'].includes(lead.status?.toLowerCase());
-        }
-        return lead.status?.toLowerCase() === statusFilter;
+        return true;
       })
       .filter((lead) => {
         // Search filter
@@ -411,6 +452,16 @@ export default function NicheDetailPage() {
         }}
         contact={selectedLeadForEdit}
         onSave={handleUpdateLead}
+      />
+
+      <ScenarioNoteModal
+        isOpen={isScenarioModalOpen}
+        onClose={() => {
+          setIsScenarioModalOpen(false);
+          setSelectedLeadForScenario(null);
+        }}
+        lead={selectedLeadForScenario}
+        onSave={handleSaveScenarioNote}
       />
 
       {/* Top Breadcrumb & Controls Header */}
@@ -531,30 +582,41 @@ export default function NicheDetailPage() {
 
       {/* Stage Filter Ribbon */}
       <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-xs flex items-center gap-1.5 overflow-x-auto">
-        {[
-          { id: 'all', label: 'All Leads', count: stageCounts.all },
-          { id: 'new', label: 'New', count: stageCounts.new },
-          { id: 'contacted', label: 'Contacted', count: stageCounts.contacted },
-          { id: 'negotiation', label: 'Negotiation', count: stageCounts.negotiation },
-          { id: 'won', label: 'Won / Approved', count: stageCounts.won },
-          { id: 'inactive', label: 'Inactive', count: stageCounts.inactive },
-        ].map((tab) => {
-          const isActive = statusFilter === tab.id;
+        <button
+          onClick={() => setStatusFilter('all')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+            statusFilter === 'all'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <span>All Leads</span>
+          <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold ${
+            statusFilter === 'all' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500'
+          }`}>
+            {stageCounts.all || 0}
+          </span>
+        </button>
+
+        {LEAD_STATUSES.map((stage) => {
+          const isActive = statusFilter === stage.id;
+          const count = stageCounts[stage.id] || 0;
           return (
             <button
-              key={tab.id}
-              onClick={() => setStatusFilter(tab.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+              key={stage.id}
+              onClick={() => setStatusFilter(stage.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                 isActive
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <span>{tab.label}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${stage.dotColor}`} />
+              <span>{stage.label}</span>
               <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold ${
                 isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500'
               }`}>
-                {tab.count}
+                {count}
               </span>
             </button>
           );
@@ -663,9 +725,10 @@ export default function NicheDetailPage() {
                   <th className="py-3 px-5">Lead / Contact</th>
                   <th className="py-3 px-4">Contact Info</th>
                   <th className="py-3 px-4">Deal Value</th>
+                  <th className="py-3 px-4 min-w-[210px]">Current Scenario & Next Steps</th>
+                  <th className="py-3 px-4">Stage / Status</th>
                   <th className="py-3 px-4">Quality Score</th>
                   <th className="py-3 px-4">Date Added & Age</th>
-                  <th className="py-3 px-4">Stage / Status</th>
                   <th className="py-3 px-5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -730,6 +793,67 @@ export default function NicheDetailPage() {
                         )}
                       </td>
 
+                      {/* Current Scenario & Next Steps */}
+                      <td className="py-3.5 px-4">
+                        {lead.pitch_notes ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedLeadForScenario(lead);
+                              setIsScenarioModalOpen(true);
+                            }}
+                            className="text-left group/note block w-full max-w-xs cursor-pointer p-2 -m-1.5 rounded-xl hover:bg-indigo-50/70 border border-transparent hover:border-indigo-200 transition-all"
+                            title="Click to update scenario notes"
+                          >
+                            <div className="flex items-start gap-1.5">
+                              <span className="material-symbols-outlined text-[15px] text-indigo-600 shrink-0 mt-0.5">chat_bubble</span>
+                              <p className="text-[11px] text-slate-800 line-clamp-2 font-medium leading-relaxed group-hover/note:text-indigo-950">
+                                {lead.pitch_notes}
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-indigo-600 font-semibold mt-1 flex items-center gap-1 opacity-80 group-hover/note:opacity-100">
+                              <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                              Update scenario
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedLeadForScenario(lead);
+                              setIsScenarioModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/70 text-slate-500 hover:text-indigo-700 text-[11px] font-medium transition-colors cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[14px] text-indigo-500">add_comment</span>
+                            <span>+ Set scenario (e.g. 2 weeks)</span>
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Inline Quick Stage Selector */}
+                      <td className="py-3.5 px-4">
+                        {(() => {
+                          const statusMeta = getLeadStatusMeta(lead.status);
+                          return (
+                            <div className="relative inline-block">
+                              <select
+                                value={statusMeta.id}
+                                disabled={updatingLeadId === lead.id}
+                                onChange={(e) => handleQuickStatusChange(lead.id, e.target.value)}
+                                className={`text-[11px] font-bold px-2.5 py-1.5 rounded-xl border focus:outline-none transition-all cursor-pointer font-mono ${statusMeta.badgeClasses}`}
+                              >
+                                {LEAD_STATUSES.map((s) => (
+                                  <option key={s.id} value={s.id} className="bg-white text-slate-900 font-sans">
+                                    {s.shortLabel} — {s.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })()}
+                      </td>
+
                       {/* Lead Score Indicator */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
@@ -770,34 +894,6 @@ export default function NicheDetailPage() {
                             </div>
                           );
                         })()}
-                      </td>
-
-                      {/* Inline Quick Stage Selector */}
-                      <td className="py-3.5 px-4">
-                        <div className="relative inline-block">
-                          <select
-                            value={lead.status?.toLowerCase() || 'new'}
-                            disabled={updatingLeadId === lead.id}
-                            onChange={(e) => handleQuickStatusChange(lead.id, e.target.value)}
-                            className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border focus:outline-none transition-all cursor-pointer font-mono ${
-                              ['approved', 'completed', 'won'].includes(lead.status?.toLowerCase())
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                                : lead.status?.toLowerCase() === 'negotiation'
-                                ? 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100'
-                                : lead.status?.toLowerCase() === 'contacted'
-                                ? 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
-                                : lead.status?.toLowerCase() === 'inactive'
-                                ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                                : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                            }`}
-                          >
-                            <option value="new">NEW</option>
-                            <option value="contacted">CONTACTED</option>
-                            <option value="negotiation">NEGOTIATION</option>
-                            <option value="approved">WON / APPROVED</option>
-                            <option value="inactive">INACTIVE</option>
-                          </select>
-                        </div>
                       </td>
 
                       {/* Actions */}

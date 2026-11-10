@@ -50,8 +50,14 @@ export async function GET(request: Request) {
     // Aggregate Client Metrics
     const totalContacts = filteredClients.length;
     const totalPipelineValue = filteredClients.reduce((sum: number, c: any) => sum + (Number(c.deal_value) || 0), 0);
-    const activeDeals = filteredClients.filter((c: any) => ['contacted', 'negotiation'].includes(c.status?.toLowerCase())).length;
-    const wonDeals = filteredClients.filter((c: any) => ['approved', 'completed'].includes(c.status?.toLowerCase())).length;
+    const activeDeals = filteredClients.filter((c: any) => {
+      const s = c.status?.toLowerCase();
+      return ['contacted', 'demo_required', 'demo_sent', 'follow_up', 'negotiation', 'postponed'].includes(s);
+    }).length;
+    const wonDeals = filteredClients.filter((c: any) => {
+      const s = c.status?.toLowerCase();
+      return ['won', 'approved', 'completed'].includes(s);
+    }).length;
     const conversionRate = totalContacts > 0 ? Math.round((wonDeals / totalContacts) * 100) : 0;
 
     // Run parallel queries for Schedules & Tasks
