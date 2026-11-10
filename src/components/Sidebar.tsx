@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import MypLogo from "@/components/brand/MypLogo";
+import OrgSwitcher from "@/components/organization/OrgSwitcher";
 import { isUserAdmin } from "@/lib/adminCheck";
 
 export default function Sidebar() {
@@ -23,9 +24,12 @@ export default function Sidebar() {
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-white border-r border-slate-200 flex flex-col p-4 space-y-2 z-50 antialiased tracking-tight shadow-xs">
       {/* Attractive MYP Brand Header with interactive Convergence Y logo */}
-      <Link href="/dashboard" className="mb-7 px-2 block group">
+      <Link href="/dashboard" className="mb-4 px-2 block group">
         <MypLogo size={38} variant="full" showTagline={true} />
       </Link>
+
+      {/* Organization / Workspace Switcher */}
+      <OrgSwitcher />
 
       {/* Nav List */}
       <nav className="flex-1 space-y-1">

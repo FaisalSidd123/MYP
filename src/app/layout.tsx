@@ -1,6 +1,7 @@
 /* eslint-disable */
 import type { Metadata } from "next";
 import { AuthProvider } from "@/context/AuthContext";
+import { OrganizationProvider } from "@/context/OrganizationContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,7 +24,9 @@ export default function RootLayout({
       </head>
       <body className="bg-slate-50 text-slate-900 min-h-screen overflow-x-hidden antialiased">
         <AuthProvider>
-          {children}
+          <OrganizationProvider>
+            {children}
+          </OrganizationProvider>
         </AuthProvider>
       </body>
     </html>

@@ -3,12 +3,51 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/authMiddleware';
 
+function isValidUuid(id?: string | null): boolean {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
+
+async function resolveOrgScope(userId: string, orgId?: string | null) {
+  if (!orgId) {
+    return { orgId: null, slug: 'office-sales', isPrimary: true, isPersonal: false };
+  }
+
+  if (isValidUuid(orgId)) {
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id, slug, name')
+        .eq('id', orgId)
+        .single();
+
+      if (org) {
+        const slug = org.slug?.toLowerCase() || '';
+        const isPersonal = slug.includes('personal');
+        const isPrimary = !isPersonal;
+        return { orgId, slug, isPrimary, isPersonal };
+      }
+    } catch (err) {
+      console.warn('Could not query organization by id:', err);
+    }
+  }
+
+  // Virtual mode fallback (e.g. 'default-office-sales' or 'default-personal-brand')
+  const lower = orgId.toLowerCase();
+  const isPersonal = lower.includes('personal');
+  const isPrimary = !isPersonal;
+  const slug = isPersonal ? 'personal-brand' : 'office-sales';
+  return { orgId, slug, isPrimary, isPersonal };
+}
+
 export async function GET(request: Request) {
   const { uid: userId, error: authError } = await verifyAuth(request);
   if (authError) return authError;
 
   const url = new URL(request.url);
   const nicheId = url.searchParams.get('niche_id');
+  const orgId = url.searchParams.get('org_id') || request.headers.get('x-org-id');
+  const orgScope = await resolveOrgScope(userId, orgId);
 
   try {
     // Date boundaries for "Today"
@@ -18,28 +57,88 @@ export async function GET(request: Request) {
     todayEnd.setHours(23, 59, 59, 999);
 
     // Fetch user's clients
-    const { data: clientsRaw, error: clientsError } = await supabase
+    const clientsQuery = supabase
       .from('clients')
-      .select('id, name, company, email, phone, status, deal_value, niche_id, niche_name, created_at')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
+    const { data: clientsRaw, error: clientsError } = await clientsQuery;
 
     if (clientsError) {
       console.error('[/api/dashboard/stats clients error]:', clientsError.message);
     }
-    const allClients = clientsRaw || [];
+    let allClients = clientsRaw || [];
+
+    if (orgScope.orgId) {
+      if (orgScope.isPersonal) {
+        allClients = allClients.filter((c: any) => {
+          if (c.org_id && isValidUuid(c.org_id) && isValidUuid(orgScope.orgId)) {
+            return c.org_id === orgScope.orgId;
+          }
+          return (
+            c.org_id === orgScope.orgId ||
+            c.source?.toLowerCase().includes('personal') ||
+            c.pitch_notes?.includes('[org:personal-brand]')
+          );
+        });
+      } else {
+        allClients = allClients.filter((c: any) => {
+          const isPersonal =
+            (c.org_id && c.org_id !== orgScope.orgId && isValidUuid(c.org_id)) ||
+            c.source?.toLowerCase().includes('personal') ||
+            c.pitch_notes?.includes('[org:personal-brand]');
+          if (isPersonal) return false;
+
+          if (c.org_id && isValidUuid(c.org_id) && isValidUuid(orgScope.orgId)) {
+            return !c.org_id || c.org_id === orgScope.orgId;
+          }
+          return true;
+        });
+      }
+    }
 
     // Fetch user's niches
-    const { data: nichesRaw, error: nichesError } = await supabase
+    const nichesQuery = supabase
       .from('niches')
       .select('*')
       .eq('user_id', userId)
       .order('name', { ascending: true });
 
+    const { data: nichesRaw, error: nichesError } = await nichesQuery;
+
     if (nichesError) {
       console.error('[/api/dashboard/stats niches error]:', nichesError.message);
     }
-    const allNiches = nichesRaw || [];
+    let allNiches = nichesRaw || [];
+
+    if (orgScope.orgId) {
+      if (orgScope.isPersonal) {
+        allNiches = allNiches.filter((n: any) => {
+          if (n.org_id && isValidUuid(n.org_id) && isValidUuid(orgScope.orgId)) {
+            return n.org_id === orgScope.orgId;
+          }
+          return (
+            n.org_id === orgScope.orgId ||
+            n.description?.includes('[org:personal-brand]') ||
+            n.name?.toLowerCase().includes('personal')
+          );
+        });
+      } else {
+        allNiches = allNiches.filter((n: any) => {
+          const isPersonal =
+            (n.org_id && n.org_id !== orgScope.orgId && isValidUuid(n.org_id)) ||
+            n.description?.includes('[org:personal-brand]') ||
+            n.name?.toLowerCase().includes('personal');
+          if (isPersonal) return false;
+
+          if (n.org_id && isValidUuid(n.org_id) && isValidUuid(orgScope.orgId)) {
+            return !n.org_id || n.org_id === orgScope.orgId;
+          }
+          return true;
+        });
+      }
+    }
 
     // Filter clients if nicheId provided
     const isFiltered = Boolean(nicheId && nicheId !== 'all');

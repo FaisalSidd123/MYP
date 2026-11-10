@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 import { parseBulkRawContacts, ParsedLead } from '@/lib/bulkContactParser';
 import { calculateLeadAge } from '@/lib/leadAge';
 
@@ -45,6 +46,7 @@ export default function BulkImportModal({
   initialNicheId,
 }: BulkImportModalProps) {
   const { user } = useAuth();
+  const { currentOrg } = useOrganization();
   const [rawText, setRawText] = useState('');
   const [parsedLeads, setParsedLeads] = useState<ParsedLead[]>([]);
   const [niches, setNiches] = useState<any[]>([]);
@@ -162,6 +164,7 @@ export default function BulkImportModal({
           created_at: l.created_at ? new Date(l.created_at).toISOString() : new Date().toISOString(),
         })),
         niche_id: selectedNicheId || null,
+        org_id: currentOrg?.id || null,
       };
 
       const res = await fetch('/api/contacts/batch', {

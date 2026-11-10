@@ -2,6 +2,7 @@
 "use client";
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 import Link from 'next/link';
 import AddContactModal from '@/components/AddContactModal';
 import EditContactModal from '@/components/EditContactModal';
@@ -63,6 +64,7 @@ interface TaskItem {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { currentOrg } = useOrganization();
   const [data, setData] = useState<{
     stats: DashboardStats;
     niches: any[];
@@ -89,9 +91,12 @@ export default function DashboardPage() {
     try {
       const token = await user.getIdToken();
       const targetNiche = nicheId !== undefined ? nicheId : selectedNicheId;
-      const url = targetNiche && targetNiche !== 'all'
-        ? `/api/dashboard/stats?niche_id=${targetNiche}`
-        : `/api/dashboard/stats`;
+      const params = new URLSearchParams();
+      if (targetNiche && targetNiche !== 'all') params.set('niche_id', targetNiche);
+      const orgIdToUse = currentOrg?.id || (typeof window !== 'undefined' ? localStorage.getItem('myp_active_org_id') : null);
+      if (orgIdToUse) params.set('org_id', orgIdToUse);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const url = `/api/dashboard/stats${qs}`;
 
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -105,11 +110,11 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedNicheId]);
+  }, [user, selectedNicheId, currentOrg?.id]);
 
   useEffect(() => {
     fetchDashboardData(selectedNicheId);
-  }, [selectedNicheId, fetchDashboardData]);
+  }, [selectedNicheId, currentOrg?.id, fetchDashboardData]);
 
   const handleSelectNiche = (nicheId: string) => {
     setSelectedNicheId(nicheId);

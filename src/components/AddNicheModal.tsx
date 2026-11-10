@@ -2,6 +2,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 
 interface AddNicheModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ const PRESET_ICONS = [
 
 export default function AddNicheModal({ isOpen, onClose, onSuccess }: AddNicheModalProps) {
   const { user } = useAuth();
+  const { currentOrg } = useOrganization();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -62,7 +64,8 @@ export default function AddNicheModal({ isOpen, onClose, onSuccess }: AddNicheMo
           description: formData.description,
           color: formData.color,
           icon: formData.icon,
-          target_deal_size: Number(formData.target_deal_size) || 0
+          target_deal_size: Number(formData.target_deal_size) || 0,
+          org_id: currentOrg?.id || null,
         })
       });
 

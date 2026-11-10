@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 import AddNicheModal from '@/components/AddNicheModal';
 import { calculateLeadAge } from '@/lib/leadAge';
 import { LEAD_STATUSES, QUICK_SCENARIO_PRESETS, getLeadStatusMeta } from '@/lib/leadStatus';
@@ -15,6 +16,7 @@ interface AddContactModalProps {
 
 export default function AddContactModal({ isOpen, onClose, onSuccess, initialNicheId }: AddContactModalProps) {
   const { user } = useAuth();
+  const { currentOrg } = useOrganization();
   const [loading, setLoading] = useState(false);
   const [niches, setNiches] = useState<any[]>([]);
   const [isNicheModalOpen, setIsNicheModalOpen] = useState(false);
@@ -115,6 +117,7 @@ export default function AddContactModal({ isOpen, onClose, onSuccess, initialNic
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           ...formData,
+          org_id: currentOrg?.id || null,
           niche_id: formData.niche_id || null,
           niche_name: selectedNicheObj ? selectedNicheObj.name : null,
           deal_value: Number(formData.deal_value) || 0,

@@ -3,23 +3,99 @@ import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/authMiddleware';
 import { supabase } from '@/lib/supabase';
 
+function isValidUuid(id?: string | null): boolean {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
+
+async function resolveOrgScope(userId: string, orgId?: string | null) {
+  if (!orgId) {
+    return { orgId: null, slug: 'office-sales', isPrimary: true, isPersonal: false };
+  }
+
+  if (isValidUuid(orgId)) {
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id, slug, name')
+        .eq('id', orgId)
+        .single();
+
+      if (org) {
+        const slug = org.slug?.toLowerCase() || '';
+        const isPersonal = slug.includes('personal');
+        const isPrimary = !isPersonal;
+        return { orgId, slug, isPrimary, isPersonal };
+      }
+    } catch (err) {
+      console.warn('Could not query organization by id:', err);
+    }
+  }
+
+  // Virtual mode fallback (e.g. 'default-office-sales' or 'default-personal-brand')
+  const lower = orgId.toLowerCase();
+  const isPersonal = lower.includes('personal');
+  const isPrimary = !isPersonal;
+  const slug = isPersonal ? 'personal-brand' : 'office-sales';
+  return { orgId, slug, isPrimary, isPersonal };
+}
+
 export async function GET(request: Request) {
   const { uid: userId, error: authError } = await verifyAuth(request);
   if (authError) return authError;
 
+  const url = new URL(request.url);
+  const orgId = url.searchParams.get('org_id') || request.headers.get('x-org-id');
+  const orgScope = await resolveOrgScope(userId, orgId);
 
-  const { data, error } = await supabase
+  const query = supabase
     .from('tasks')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[/api/tasks GET Error]:', error.message, error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  let filtered = data || [];
+  if (orgScope.orgId) {
+    if (orgScope.isPersonal) {
+      filtered = filtered.filter((t: any) => {
+        if (t.org_id && isValidUuid(t.org_id) && isValidUuid(orgScope.orgId)) {
+          return t.org_id === orgScope.orgId;
+        }
+        return (
+          t.org_id === orgScope.orgId ||
+          t.description?.includes('[org:personal-brand]') ||
+          t.title?.toLowerCase().includes('personal')
+        );
+      });
+    } else {
+      filtered = filtered.filter((t: any) => {
+        const isPersonal =
+          (t.org_id && t.org_id !== orgScope.orgId && isValidUuid(t.org_id)) ||
+          t.description?.includes('[org:personal-brand]') ||
+          t.title?.toLowerCase().includes('personal');
+        if (isPersonal) return false;
+
+        if (t.org_id && isValidUuid(t.org_id) && isValidUuid(orgScope.orgId)) {
+          return !t.org_id || t.org_id === orgScope.orgId;
+        }
+        return true;
+      });
+    }
+  }
+
+  const cleaned = filtered.map((t: any) => ({
+    ...t,
+    description: t.description ? t.description.replace(/\[org:personal-brand\]/g, '').trim() : ''
+  }));
+
+  return NextResponse.json(cleaned);
 }
 
 export async function POST(request: Request) {
@@ -35,9 +111,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields: title, status' }, { status: 400 });
     }
 
+    const rawOrgId = body.org_id || request.headers.get('x-org-id');
+    const orgScope = await resolveOrgScope(authUserId, rawOrgId);
+    const orgId = (rawOrgId && isValidUuid(rawOrgId)) ? rawOrgId : null;
+
+    let finalDesc = description?.trim() || '';
+    if (orgScope.isPersonal && !finalDesc.includes('[org:personal-brand]')) {
+      finalDesc = finalDesc ? `${finalDesc} [org:personal-brand]` : '[org:personal-brand]';
+    }
+
     const { data, error } = await supabase
       .from('tasks')
-      .insert([{ user_id, client_id, title, description, due_date, status }])
+      .insert([{ user_id, org_id: orgId || null, client_id, title, description: finalDesc, due_date, status }])
       .select()
       .single();
 

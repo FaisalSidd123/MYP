@@ -3,6 +3,43 @@ import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/authMiddleware';
 import { supabase } from '@/lib/supabase';
 
+function isValidUuid(id?: string | null): boolean {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
+
+async function resolveOrgScope(userId: string, orgId?: string | null) {
+  if (!orgId) {
+    return { orgId: null, slug: 'office-sales', isPrimary: true, isPersonal: false };
+  }
+
+  if (isValidUuid(orgId)) {
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id, slug, name')
+        .eq('id', orgId)
+        .single();
+
+      if (org) {
+        const slug = org.slug?.toLowerCase() || '';
+        const isPersonal = slug.includes('personal');
+        const isPrimary = !isPersonal;
+        return { orgId, slug, isPrimary, isPersonal };
+      }
+    } catch (err) {
+      console.warn('Could not query organization by id:', err);
+    }
+  }
+
+  // Virtual mode fallback (e.g. 'default-office-sales' or 'default-personal-brand')
+  const lower = orgId.toLowerCase();
+  const isPersonal = lower.includes('personal');
+  const isPrimary = !isPersonal;
+  const slug = isPersonal ? 'personal-brand' : 'office-sales';
+  return { orgId, slug, isPrimary, isPersonal };
+}
+
 function mapFallbackStatus(status?: string): string {
   const clean = status?.toLowerCase().trim();
   switch (clean) {
@@ -48,26 +85,41 @@ export async function POST(request: Request) {
       }
     }
 
+    const rawOrgId = body.org_id || request.headers.get('x-org-id');
+    const orgScope = await resolveOrgScope(authUserId, rawOrgId);
+    const orgId = (rawOrgId && isValidUuid(rawOrgId)) ? rawOrgId : null;
+
     // Prepare rows for bulk insert
     const rows = leads.map((lead: any, idx: number) => {
       const name = lead.name?.trim() || `Lead #${idx + 1}`;
       const nicheId = lead.niche_id || defaultNicheId || null;
       const nicheName = lead.niche_name || (lead.niche_id ? null : resolvedDefaultNicheName) || null;
 
+      let finalPitchNotes = lead.pitch_notes?.trim() || null;
+      const defaultSource = orgScope.isPersonal ? 'Personal Brand' : 'Bulk Raw Import';
+      const finalSource = lead.source?.trim() || defaultSource;
+
+      if (orgScope.isPersonal) {
+        if (!finalPitchNotes?.includes('[org:personal-brand]')) {
+          finalPitchNotes = finalPitchNotes ? `${finalPitchNotes} [org:personal-brand]` : '[org:personal-brand]';
+        }
+      }
+
       return {
         user_id: authUserId,
+        org_id: orgId || null,
         name,
         email: lead.email?.trim() || null,
         phone: lead.phone?.trim() || null,
         company: lead.company?.trim() || null,
-        source: lead.source?.trim() || 'Bulk Raw Import',
+        source: finalSource,
         status: lead.status || 'new',
         niche_id: nicheId,
         niche_name: nicheName,
         deal_value: Number(lead.deal_value) || 0,
         lead_score: Number(lead.lead_score) || 50,
         pitch: Array.isArray(lead.pitch) ? lead.pitch : [],
-        pitch_notes: lead.pitch_notes?.trim() || null,
+        pitch_notes: finalPitchNotes,
         avatar_url: lead.avatar_url || null,
         created_at: lead.created_at ? new Date(lead.created_at).toISOString() : new Date().toISOString(),
       };

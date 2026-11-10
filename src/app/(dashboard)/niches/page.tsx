@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 import Link from 'next/link';
 import AddNicheModal from '@/components/AddNicheModal';
 import AddContactModal from '@/components/AddContactModal';
@@ -22,6 +23,7 @@ interface NicheItem {
 
 export default function NichesPage() {
   const { user } = useAuth();
+  const { currentOrg } = useOrganization();
   const [niches, setNiches] = useState<NicheItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddNicheModalOpen, setIsAddNicheModalOpen] = useState(false);
@@ -37,7 +39,9 @@ export default function NichesPage() {
     setLoading(true);
     try {
       const token = await user.getIdToken();
-      const res = await fetch('/api/niches', {
+      const orgIdToUse = currentOrg?.id || (typeof window !== 'undefined' ? localStorage.getItem('myp_active_org_id') : null);
+      const orgParam = orgIdToUse ? `?org_id=${orgIdToUse}` : '';
+      const res = await fetch(`/api/niches${orgParam}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -84,7 +88,7 @@ export default function NichesPage() {
 
   useEffect(() => {
     fetchNiches();
-  }, [user]);
+  }, [user, currentOrg?.id]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US', {

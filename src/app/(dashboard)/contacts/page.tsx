@@ -16,9 +16,11 @@ import {
   isLeadWon,
 } from '@/lib/leadStatus';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 
 export default function ContactsPage() {
   const { user } = useAuth();
+  const { currentOrg } = useOrganization();
   const searchParams = useSearchParams();
   const [isContactModalOpen, setContactModalOpen] = useState(false);
   const [isBulkImportOpen, setBulkImportOpen] = useState(false);
@@ -48,7 +50,9 @@ export default function ContactsPage() {
     if (!user) return;
     try {
       const token = await user.getIdToken();
-      const res = await fetch('/api/niches', {
+      const orgIdToUse = currentOrg?.id || (typeof window !== 'undefined' ? localStorage.getItem('myp_active_org_id') : null);
+      const orgParam = orgIdToUse ? `?org_id=${orgIdToUse}` : '';
+      const res = await fetch(`/api/niches${orgParam}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -68,7 +72,9 @@ export default function ContactsPage() {
     setLoading(true);
     try {
       const token = await user.getIdToken();
-      const res = await fetch(`/api/contacts`, {
+      const orgIdToUse = currentOrg?.id || (typeof window !== 'undefined' ? localStorage.getItem('myp_active_org_id') : null);
+      const orgParam = orgIdToUse ? `?org_id=${orgIdToUse}` : '';
+      const res = await fetch(`/api/contacts${orgParam}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -147,7 +153,7 @@ export default function ContactsPage() {
   useEffect(() => {
     fetchContacts();
     fetchNiches();
-  }, [user]);
+  }, [user, currentOrg?.id]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {

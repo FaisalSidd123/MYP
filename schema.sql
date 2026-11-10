@@ -111,4 +111,43 @@ WHERE email ILIKE '%goodfaisal%';
 -- Run this in Supabase SQL Editor to allow all stages (demo_required, demo_sent, follow_up, negotiation, postponed, won, lost)
 ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS clients_status_check;
 
+-- =========================================================================
+-- 8. Multi-Organization Support (Workspaces & Memberships)
+-- Run this in Supabase SQL Editor to enable multiple organizations per user
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.organizations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  owner_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.organization_members (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'member', -- owner, admin, member
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(org_id, user_id)
+);
+
+-- Add org_id to existing core tables
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.niches ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.schedules ADD COLUMN IF NOT EXISTS org_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+
+-- Performance Indexes for Multi-Tenant Scoping
+CREATE INDEX IF NOT EXISTS idx_organizations_owner_id ON public.organizations(owner_id);
+CREATE INDEX IF NOT EXISTS idx_org_members_user_id ON public.organization_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_org_members_org_id ON public.organization_members(org_id);
+CREATE INDEX IF NOT EXISTS idx_clients_org_id ON public.clients(org_id);
+CREATE INDEX IF NOT EXISTS idx_niches_org_id ON public.niches(org_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_org_id ON public.tasks(org_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_org_id ON public.schedules(org_id);
+
+
 
