@@ -3,6 +3,24 @@ import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/authMiddleware';
 import { supabase } from '@/lib/supabase';
 
+// Helper to map expanded statuses to legacy statuses if the DB still has the old 'clients_status_check' constraint
+function mapFallbackStatus(status?: string): string {
+  const clean = status?.toLowerCase().trim();
+  switch (clean) {
+    case 'won':
+      return 'approved';
+    case 'lost':
+      return 'inactive';
+    case 'demo_required':
+    case 'demo_sent':
+    case 'follow_up':
+    case 'postponed':
+      return 'negotiation';
+    default:
+      return clean || 'new';
+  }
+}
+
 export async function GET(request: Request) {
   const { uid: userId, error: authError } = await verifyAuth(request);
   if (authError) return authError;
@@ -98,6 +116,37 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[/api/contacts POST Error]:', error.message);
+
+      // Handle PostgreSQL check constraint clients_status_check
+      if (error.code === '23514' || error.message?.includes('clients_status_check')) {
+        const fallbackStatus = mapFallbackStatus(status);
+        const { data: retryData, error: retryError } = await supabase
+          .from('clients')
+          .insert([{
+            user_id,
+            name: name.trim(),
+            email: email?.trim() || null,
+            phone: phone?.trim() || null,
+            company: company?.trim() || null,
+            source: source?.trim() || 'Direct Inbound',
+            status: fallbackStatus,
+            niche_id: niche_id || null,
+            niche_name: resolvedNicheName || null,
+            deal_value: Number(deal_value) || 0,
+            lead_score: Number(lead_score) || 50,
+            pitch: pitch || [],
+            pitch_notes: pitch_notes || null,
+            avatar_url: avatar_url || null,
+            created_at: created_at ? new Date(created_at).toISOString() : new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (!retryError && retryData) {
+          return NextResponse.json({ ...retryData, status: status || 'new' }, { status: 201 });
+        }
+      }
+
       // Fallback: If new migration columns are not yet added to 'clients' in Supabase, insert core fields
       if (error.code === 'PGRST204' || error.message?.includes('column')) {
         const { data: fallbackData, error: fallbackError } = await supabase
@@ -109,7 +158,7 @@ export async function POST(request: Request) {
             phone: phone?.trim() || null,
             company: company?.trim() || null,
             source: source?.trim() || 'Direct Inbound',
-            status: status || 'new',
+            status: mapFallbackStatus(status) || 'new',
             pitch: pitch || [],
             pitch_notes: pitch_notes || null,
             avatar_url: avatar_url || null
@@ -118,7 +167,7 @@ export async function POST(request: Request) {
           .single();
 
         if (!fallbackError && fallbackData) {
-          return NextResponse.json(fallbackData, { status: 201 });
+          return NextResponse.json({ ...fallbackData, status: status || 'new' }, { status: 201 });
         }
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -203,6 +252,39 @@ export async function PUT(request: Request) {
 
     if (error) {
       console.error('[/api/contacts PUT Error]:', error.message);
+
+      // Handle PostgreSQL check constraint clients_status_check
+      if (error.code === '23514' || error.message?.includes('clients_status_check')) {
+        const fallbackStatus = mapFallbackStatus(status);
+        const { data: retryData, error: retryError } = await supabase
+          .from('clients')
+          .update({
+            name: name.trim(),
+            email: email?.trim() || null,
+            phone: phone?.trim() || null,
+            company: company?.trim() || null,
+            source: source?.trim() || null,
+            status: fallbackStatus,
+            niche_id: niche_id || null,
+            niche_name: resolvedNicheName || null,
+            deal_value: Number(deal_value) || 0,
+            lead_score: Number(lead_score) || 50,
+            pitch: pitch || [],
+            pitch_notes: pitch_notes ?? body.scenario_notes ?? null,
+            avatar_url,
+            ...(created_at ? { created_at: new Date(created_at).toISOString() } : {}),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .eq('user_id', user_id)
+          .select()
+          .single();
+
+        if (!retryError && retryData) {
+          return NextResponse.json({ ...retryData, status: status });
+        }
+      }
+
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -248,6 +330,24 @@ export async function PATCH(request: Request) {
 
     if (error) {
       console.error('[/api/contacts PATCH Error]:', error.message);
+
+      // Handle PostgreSQL check constraint clients_status_check
+      if (error.code === '23514' || error.message?.includes('clients_status_check')) {
+        const fallbackStatus = mapFallbackStatus(updates.status);
+        const fallbackUpdates = { ...updates, status: fallbackStatus };
+        const { data: retryData, error: retryError } = await supabase
+          .from('clients')
+          .update(fallbackUpdates)
+          .eq('id', id)
+          .eq('user_id', authUserId)
+          .select()
+          .single();
+
+        if (!retryError && retryData) {
+          return NextResponse.json({ ...retryData, status: updates.status });
+        }
+      }
+
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

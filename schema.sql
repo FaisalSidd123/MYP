@@ -107,3 +107,8 @@ UPDATE public.users
 SET role = 'admin' 
 WHERE email ILIKE '%goodfaisal%';
 
+-- 7. Fix check constraint on clients table for expanded sales pipeline statuses:
+-- Run this in Supabase SQL Editor to allow all stages (demo_required, demo_sent, follow_up, negotiation, postponed, won, lost)
+ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS clients_status_check;
+
+

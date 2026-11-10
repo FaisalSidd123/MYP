@@ -249,3 +249,4 @@ export const QUICK_SCENARIO_PRESETS = [
     text: 'Spoke with gatekeeper; primary decision maker traveling. Revisit shortly.',
   },
 ];
+

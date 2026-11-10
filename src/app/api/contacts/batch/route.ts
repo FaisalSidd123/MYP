@@ -3,6 +3,23 @@ import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/authMiddleware';
 import { supabase } from '@/lib/supabase';
 
+function mapFallbackStatus(status?: string): string {
+  const clean = status?.toLowerCase().trim();
+  switch (clean) {
+    case 'won':
+      return 'approved';
+    case 'lost':
+      return 'inactive';
+    case 'demo_required':
+    case 'demo_sent':
+    case 'follow_up':
+    case 'postponed':
+      return 'negotiation';
+    default:
+      return clean || 'new';
+  }
+}
+
 export async function POST(request: Request) {
   const { uid: authUserId, error: authError } = await verifyAuth(request);
   if (authError) return authError;
@@ -64,6 +81,23 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[/api/contacts/batch Primary Insert Error]:', error.message);
+
+      // Handle PostgreSQL check constraint clients_status_check
+      if (error.code === '23514' || error.message?.includes('clients_status_check')) {
+        const safeRows = rows.map((r: any) => ({ ...r, status: mapFallbackStatus(r.status) }));
+        const { data: retryData, error: retryError } = await supabase
+          .from('clients')
+          .insert(safeRows)
+          .select();
+
+        if (!retryError && retryData) {
+          return NextResponse.json({
+            success: true,
+            count: retryData.length,
+            contacts: retryData,
+          }, { status: 201 });
+        }
+      }
 
       // Fallback: If new migration columns (niche_id, niche_name, lead_score, etc.) are missing in Supabase schema
       if (error.code === 'PGRST204' || error.message?.includes('column')) {
