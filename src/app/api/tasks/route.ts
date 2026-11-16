@@ -24,7 +24,8 @@ async function resolveOrgScope(userId: string, orgId?: string | null) {
       if (org) {
         const slug = org.slug?.toLowerCase() || '';
         const isPersonal = slug.includes('personal');
-        const isPrimary = !isPersonal;
+        const isOffice = slug.includes('office') || slug === 'office-sales';
+        const isPrimary = isOffice;
         return { orgId, slug, isPrimary, isPersonal };
       }
     } catch (err) {
@@ -32,11 +33,12 @@ async function resolveOrgScope(userId: string, orgId?: string | null) {
     }
   }
 
-  // Virtual mode fallback (e.g. 'default-office-sales' or 'default-personal-brand')
+  // Virtual mode fallback (e.g. 'default-office-sales', 'default-personal-brand', or 'org-virtual-...')
   const lower = orgId.toLowerCase();
-  const isPersonal = lower.includes('personal');
-  const isPrimary = !isPersonal;
-  const slug = isPersonal ? 'personal-brand' : 'office-sales';
+  const isOffice = lower.includes('office') || lower === 'default-office-sales';
+  const isPersonal = lower.includes('personal') || lower === 'default-personal-brand';
+  const isPrimary = isOffice;
+  const slug = isOffice ? 'office-sales' : isPersonal ? 'personal-brand' : orgId;
   return { orgId, slug, isPrimary, isPersonal };
 }
 
@@ -74,7 +76,8 @@ export async function GET(request: Request) {
           t.title?.toLowerCase().includes('personal')
         );
       });
-    } else {
+    } else if (orgScope.isPrimary) {
+      // Office Sales
       filtered = filtered.filter((t: any) => {
         const isPersonal =
           (t.org_id && t.org_id !== orgScope.orgId && isValidUuid(t.org_id)) ||
@@ -82,17 +85,33 @@ export async function GET(request: Request) {
           t.title?.toLowerCase().includes('personal');
         if (isPersonal) return false;
 
+        const isCustomOrg = t.description?.includes('[org:org-virtual-') || (t.org_id && t.org_id !== orgScope.orgId);
+        if (isCustomOrg) return false;
+
         if (t.org_id && isValidUuid(t.org_id) && isValidUuid(orgScope.orgId)) {
           return !t.org_id || t.org_id === orgScope.orgId;
         }
         return true;
+      });
+    } else {
+      // Custom Workspace
+      filtered = filtered.filter((t: any) => {
+        if (t.org_id && isValidUuid(t.org_id) && isValidUuid(orgScope.orgId)) {
+          return t.org_id === orgScope.orgId;
+        }
+        const customTag = `[org:${orgScope.orgId}]`;
+        return (
+          t.org_id === orgScope.orgId ||
+          t.description?.includes(customTag) ||
+          t.title?.includes(orgScope.orgId || '')
+        );
       });
     }
   }
 
   const cleaned = filtered.map((t: any) => ({
     ...t,
-    description: t.description ? t.description.replace(/\[org:personal-brand\]/g, '').trim() : ''
+    description: t.description ? t.description.replace(/\[org:[^\]]+\]/g, '').trim() : ''
   }));
 
   return NextResponse.json(cleaned);
@@ -118,6 +137,8 @@ export async function POST(request: Request) {
     let finalDesc = description?.trim() || '';
     if (orgScope.isPersonal && !finalDesc.includes('[org:personal-brand]')) {
       finalDesc = finalDesc ? `${finalDesc} [org:personal-brand]` : '[org:personal-brand]';
+    } else if (!orgScope.isPrimary && orgScope.orgId && !finalDesc.includes(`[org:${orgScope.orgId}]`)) {
+      finalDesc = finalDesc ? `${finalDesc} [org:${orgScope.orgId}]` : `[org:${orgScope.orgId}]`;
     }
 
     const { data, error } = await supabase

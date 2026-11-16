@@ -24,7 +24,8 @@ async function resolveOrgScope(userId: string, orgId?: string | null) {
       if (org) {
         const slug = org.slug?.toLowerCase() || '';
         const isPersonal = slug.includes('personal');
-        const isPrimary = !isPersonal;
+        const isOffice = slug.includes('office') || slug === 'office-sales';
+        const isPrimary = isOffice;
         return { orgId, slug, isPrimary, isPersonal };
       }
     } catch (err) {
@@ -82,7 +83,7 @@ export async function GET(request: Request) {
             c.pitch_notes?.includes('[org:personal-brand]')
           );
         });
-      } else {
+      } else if (orgScope.isPrimary) {
         allClients = allClients.filter((c: any) => {
           const isPersonal =
             (c.org_id && c.org_id !== orgScope.orgId && isValidUuid(c.org_id)) ||
@@ -90,10 +91,26 @@ export async function GET(request: Request) {
             c.pitch_notes?.includes('[org:personal-brand]');
           if (isPersonal) return false;
 
+          const isCustomOrg = c.pitch_notes?.includes('[org:org-virtual-') || (c.org_id && c.org_id !== orgScope.orgId);
+          if (isCustomOrg) return false;
+
           if (c.org_id && isValidUuid(c.org_id) && isValidUuid(orgScope.orgId)) {
             return !c.org_id || c.org_id === orgScope.orgId;
           }
           return true;
+        });
+      } else {
+        // Custom Workspace
+        allClients = allClients.filter((c: any) => {
+          if (c.org_id && isValidUuid(c.org_id) && isValidUuid(orgScope.orgId)) {
+            return c.org_id === orgScope.orgId;
+          }
+          const customTag = `[org:${orgScope.orgId}]`;
+          return (
+            c.org_id === orgScope.orgId ||
+            c.pitch_notes?.includes(customTag) ||
+            c.source?.includes(orgScope.orgId || '')
+          );
         });
       }
     }
@@ -124,7 +141,7 @@ export async function GET(request: Request) {
             n.name?.toLowerCase().includes('personal')
           );
         });
-      } else {
+      } else if (orgScope.isPrimary) {
         allNiches = allNiches.filter((n: any) => {
           const isPersonal =
             (n.org_id && n.org_id !== orgScope.orgId && isValidUuid(n.org_id)) ||
@@ -132,10 +149,26 @@ export async function GET(request: Request) {
             n.name?.toLowerCase().includes('personal');
           if (isPersonal) return false;
 
+          const isCustomOrg = n.description?.includes('[org:org-virtual-') || (n.org_id && n.org_id !== orgScope.orgId);
+          if (isCustomOrg) return false;
+
           if (n.org_id && isValidUuid(n.org_id) && isValidUuid(orgScope.orgId)) {
             return !n.org_id || n.org_id === orgScope.orgId;
           }
           return true;
+        });
+      } else {
+        // Custom Workspace
+        allNiches = allNiches.filter((n: any) => {
+          if (n.org_id && isValidUuid(n.org_id) && isValidUuid(orgScope.orgId)) {
+            return n.org_id === orgScope.orgId;
+          }
+          const customTag = `[org:${orgScope.orgId}]`;
+          return (
+            n.org_id === orgScope.orgId ||
+            n.description?.includes(customTag) ||
+            n.name?.includes(orgScope.orgId || '')
+          );
         });
       }
     }
@@ -193,8 +226,14 @@ export async function GET(request: Request) {
         .limit(5)
     ]);
 
+    // Clean internal org tags from niche descriptions for UI
+    const cleanedNiches = allNiches.map((n: any) => ({
+      ...n,
+      description: n.description ? n.description.replace(/\[org:[^\]]+\]/g, '').trim() : ''
+    }));
+
     // Build Niche Summaries for Categorized Breakdown
-    const nichesSummary = allNiches.map((niche: any) => {
+    const nichesSummary = cleanedNiches.map((niche: any) => {
       const nicheClients = allClients.filter((c: any) => c.niche_id === niche.id || c.niche_name?.toLowerCase() === niche.name?.toLowerCase());
       const count = nicheClients.length;
       const value = nicheClients.reduce((sum: number, c: any) => sum + (Number(c.deal_value) || 0), 0);
@@ -231,7 +270,7 @@ export async function GET(request: Request) {
         pendingTasks: pendingTasks || 0,
         completedTasks: completedTasks || 0,
       },
-      niches: allNiches,
+      niches: cleanedNiches,
       nichesSummary,
       recentLeads,
       upcomingSchedules: upcomingSchedules || [],

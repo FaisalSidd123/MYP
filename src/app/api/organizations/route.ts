@@ -54,7 +54,8 @@ export async function GET(request: Request) {
 
       if (orgs.length > 0) {
         // Automatically backfill any existing unassigned records to primary organization (Office Sales)
-        const primaryOrgId = orgs[0].id;
+        const officeOrg = orgs.find((o: any) => o.slug === 'office-sales' || o.name?.toLowerCase().includes('office')) || orgs[0];
+        const primaryOrgId = officeOrg?.id;
         if (primaryOrgId && isValidUuid(primaryOrgId)) {
           await Promise.allSettled([
             supabase.from('clients').update({ org_id: primaryOrgId }).eq('user_id', authUserId).is('org_id', null),

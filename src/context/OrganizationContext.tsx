@@ -32,14 +32,60 @@ const OrganizationContext = createContext<OrganizationContextType>({
 });
 
 const ACTIVE_ORG_STORAGE_KEY = 'myp_active_org_id';
+const CUSTOM_ORGS_STORAGE_KEY = 'myp_custom_orgs';
+
+const BASE_DEFAULT_ORGS: Organization[] = [
+  {
+    id: 'default-office-sales',
+    name: 'Office Sales',
+    slug: 'office-sales',
+    role: 'owner',
+  },
+  {
+    id: 'default-personal-brand',
+    name: 'Personal Brand',
+    slug: 'personal-brand',
+    role: 'owner',
+  },
+];
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState<Organization[]>(() => {
+    const list = [...BASE_DEFAULT_ORGS];
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(CUSTOM_ORGS_STORAGE_KEY);
+        if (raw) {
+          const customList: Organization[] = JSON.parse(raw);
+          customList.forEach((co) => {
+            if (!list.some((o) => o.id === co.id || o.slug === co.slug)) {
+              list.push(co);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Failed to parse custom orgs from storage:', e);
+      }
+    }
+    return list;
+  });
+
   const [currentOrg, setCurrentOrgState] = useState<Organization | null>(() => {
     if (typeof window !== 'undefined') {
       const storedId = localStorage.getItem(ACTIVE_ORG_STORAGE_KEY);
       if (storedId) {
+        // Try to match in custom orgs first
+        try {
+          const raw = localStorage.getItem(CUSTOM_ORGS_STORAGE_KEY);
+          if (raw) {
+            const customList: Organization[] = JSON.parse(raw);
+            const found = customList.find((o) => o.id === storedId);
+            if (found) return found;
+          }
+        } catch {
+          // ignore
+        }
         return {
           id: storedId,
           name: storedId.toLowerCase().includes('personal') ? 'Personal Brand' : 'Office Sales',
@@ -89,12 +135,30 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
       if (res.ok) {
         const orgs: Organization[] = await res.json();
-        setOrganizations(orgs);
+        const merged = [...orgs];
 
-        if (orgs.length > 0) {
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem(CUSTOM_ORGS_STORAGE_KEY);
+            if (raw) {
+              const customList: Organization[] = JSON.parse(raw);
+              customList.forEach((co) => {
+                if (!merged.some((o) => o.id === co.id || o.slug === co.slug)) {
+                  merged.push(co);
+                }
+              });
+            }
+          } catch (e) {
+            console.error('Failed to parse custom orgs from storage:', e);
+          }
+        }
+
+        setOrganizations(merged);
+
+        if (merged.length > 0) {
           const storedOrgId = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_ORG_STORAGE_KEY) : null;
-          const matched = orgs.find((o) => o.id === storedOrgId);
-          const active = matched || orgs[0];
+          const matched = merged.find((o) => o.id === storedOrgId);
+          const active = matched || merged[0];
           setCurrentOrg(active);
         }
       }
@@ -123,8 +187,27 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       });
 
       if (res.ok) {
-        const newOrg = await res.json();
-        setOrganizations((prev) => [...prev, newOrg]);
+        const newOrg: Organization = await res.json();
+
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem(CUSTOM_ORGS_STORAGE_KEY);
+            const customList: Organization[] = raw ? JSON.parse(raw) : [];
+            if (!customList.some((o) => o.id === newOrg.id || o.slug === newOrg.slug)) {
+              customList.push(newOrg);
+              localStorage.setItem(CUSTOM_ORGS_STORAGE_KEY, JSON.stringify(customList));
+            }
+            localStorage.setItem(ACTIVE_ORG_STORAGE_KEY, newOrg.id);
+            window.location.reload();
+          } catch (e) {
+            console.error('Failed to persist custom org to storage:', e);
+          }
+        }
+
+        setOrganizations((prev) => {
+          if (prev.some((o) => o.id === newOrg.id)) return prev;
+          return [...prev, newOrg];
+        });
         setCurrentOrg(newOrg);
         return newOrg;
       }

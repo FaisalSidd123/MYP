@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useOrganization } from '@/context/OrganizationContext';
 import { calculateLeadAge } from '@/lib/leadAge';
 import { LEAD_STATUSES, normalizeLeadStatus, QUICK_SCENARIO_PRESETS, getLeadStatusMeta } from '@/lib/leadStatus';
 
@@ -14,6 +15,7 @@ interface EditContactModalProps {
 
 export default function EditContactModal({ isOpen, onClose, contact, onSave }: EditContactModalProps) {
   const { user } = useAuth();
+  const { currentOrg } = useOrganization();
   const [niches, setNiches] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     id: '',
@@ -38,8 +40,13 @@ export default function EditContactModal({ isOpen, onClose, contact, onSave }: E
       if (!user) return;
       try {
         const token = await user.getIdToken();
-        const res = await fetch('/api/niches', {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const orgIdToUse = currentOrg?.id || (typeof window !== 'undefined' ? localStorage.getItem('myp_active_org_id') : null);
+        const orgParam = orgIdToUse ? `?org_id=${orgIdToUse}` : '';
+        const res = await fetch(`/api/niches${orgParam}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            ...(orgIdToUse ? { 'x-org-id': orgIdToUse } : {})
+          }
         });
         if (res.ok) {
           const list = await res.json();
@@ -52,7 +59,7 @@ export default function EditContactModal({ isOpen, onClose, contact, onSave }: E
     if (isOpen) {
       loadNiches();
     }
-  }, [user, isOpen]);
+  }, [user, isOpen, currentOrg?.id]);
 
   useEffect(() => {
     if (contact) {

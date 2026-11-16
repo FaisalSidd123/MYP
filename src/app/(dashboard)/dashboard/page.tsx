@@ -134,10 +134,18 @@ export default function DashboardPage() {
     if (!user) return;
     try {
       const token = await user.getIdToken();
+      const orgIdToUse = currentOrg?.id || (typeof window !== 'undefined' ? localStorage.getItem('myp_active_org_id') : null);
       const res = await fetch('/api/contacts', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(updatedContact),
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}`,
+          ...(orgIdToUse ? { 'x-org-id': orgIdToUse } : {})
+        },
+        body: JSON.stringify({
+          ...updatedContact,
+          org_id: updatedContact.org_id || orgIdToUse || null,
+        }),
       });
       if (res.ok) {
         setIsEditContactModalOpen(false);

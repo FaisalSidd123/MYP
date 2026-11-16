@@ -24,7 +24,8 @@ async function resolveOrgScope(userId: string, orgId?: string | null) {
       if (org) {
         const slug = org.slug?.toLowerCase() || '';
         const isPersonal = slug.includes('personal');
-        const isPrimary = !isPersonal;
+        const isOffice = slug.includes('office') || slug === 'office-sales';
+        const isPrimary = isOffice;
         return { orgId, slug, isPrimary, isPersonal };
       }
     } catch (err) {
@@ -32,11 +33,12 @@ async function resolveOrgScope(userId: string, orgId?: string | null) {
     }
   }
 
-  // Virtual mode fallback (e.g. 'default-office-sales' or 'default-personal-brand')
+  // Virtual mode fallback (e.g. 'default-office-sales', 'default-personal-brand', or 'org-virtual-...')
   const lower = orgId.toLowerCase();
-  const isPersonal = lower.includes('personal');
-  const isPrimary = !isPersonal;
-  const slug = isPersonal ? 'personal-brand' : 'office-sales';
+  const isOffice = lower.includes('office') || lower === 'default-office-sales';
+  const isPersonal = lower.includes('personal') || lower === 'default-personal-brand';
+  const isPrimary = isOffice;
+  const slug = isOffice ? 'office-sales' : isPersonal ? 'personal-brand' : orgId;
   return { orgId, slug, isPrimary, isPersonal };
 }
 
@@ -79,7 +81,8 @@ export async function GET(request: Request) {
             n.name?.toLowerCase().includes('personal')
           );
         });
-      } else {
+      } else if (orgScope.isPrimary) {
+        // Office Sales / Primary Org
         filteredNiches = filteredNiches.filter((n: any) => {
           const isPersonal =
             (n.org_id && n.org_id !== orgScope.orgId && isValidUuid(n.org_id)) ||
@@ -87,10 +90,26 @@ export async function GET(request: Request) {
             n.name?.toLowerCase().includes('personal');
           if (isPersonal) return false;
 
+          const isCustomOrg = n.description?.includes('[org:org-virtual-') || (n.org_id && n.org_id !== orgScope.orgId);
+          if (isCustomOrg) return false;
+
           if (n.org_id && isValidUuid(n.org_id) && isValidUuid(orgScope.orgId)) {
             return !n.org_id || n.org_id === orgScope.orgId;
           }
           return true;
+        });
+      } else {
+        // Custom Workspace (e.g. org-virtual-...)
+        filteredNiches = filteredNiches.filter((n: any) => {
+          if (n.org_id && isValidUuid(n.org_id) && isValidUuid(orgScope.orgId)) {
+            return n.org_id === orgScope.orgId;
+          }
+          const customTag = `[org:${orgScope.orgId}]`;
+          return (
+            n.org_id === orgScope.orgId ||
+            n.description?.includes(customTag) ||
+            n.name?.includes(orgScope.orgId || '')
+          );
         });
       }
     }
@@ -98,7 +117,7 @@ export async function GET(request: Request) {
     // Clean internal tag from description for UI
     filteredNiches = filteredNiches.map((n: any) => ({
       ...n,
-      description: n.description ? n.description.replace(/\[org:personal-brand\]/g, '').trim() : ''
+      description: n.description ? n.description.replace(/\[org:[^\]]+\]/g, '').trim() : ''
     }));
 
     // 2. Fetch clients to compute per-niche metrics with identical org isolation
@@ -126,17 +145,34 @@ export async function GET(request: Request) {
             c.pitch_notes?.includes('[org:personal-brand]')
           );
         });
-      } else {
+      } else if (orgScope.isPrimary) {
         clientList = clientList.filter((c: any) => {
           const isPersonal =
             (c.org_id && c.org_id !== orgScope.orgId && isValidUuid(c.org_id)) ||
             c.source?.toLowerCase().includes('personal') ||
             c.pitch_notes?.includes('[org:personal-brand]');
           if (isPersonal) return false;
+
+          const isCustomOrg = c.pitch_notes?.includes('[org:org-virtual-') || (c.org_id && c.org_id !== orgScope.orgId);
+          if (isCustomOrg) return false;
+
           if (c.org_id && isValidUuid(c.org_id) && isValidUuid(orgScope.orgId)) {
             return !c.org_id || c.org_id === orgScope.orgId;
           }
           return true;
+        });
+      } else {
+        // Custom Workspace
+        clientList = clientList.filter((c: any) => {
+          if (c.org_id && isValidUuid(c.org_id) && isValidUuid(orgScope.orgId)) {
+            return c.org_id === orgScope.orgId;
+          }
+          const customTag = `[org:${orgScope.orgId}]`;
+          return (
+            c.org_id === orgScope.orgId ||
+            c.pitch_notes?.includes(customTag) ||
+            c.source?.includes(orgScope.orgId || '')
+          );
         });
       }
     }
@@ -186,6 +222,8 @@ export async function POST(request: Request) {
     let finalDesc = description?.trim() || '';
     if (orgScope.isPersonal && !finalDesc.includes('[org:personal-brand]')) {
       finalDesc = finalDesc ? `${finalDesc} [org:personal-brand]` : '[org:personal-brand]';
+    } else if (!orgScope.isPrimary && orgScope.orgId && !finalDesc.includes(`[org:${orgScope.orgId}]`)) {
+      finalDesc = finalDesc ? `${finalDesc} [org:${orgScope.orgId}]` : `[org:${orgScope.orgId}]`;
     }
 
     const { data, error } = await supabase

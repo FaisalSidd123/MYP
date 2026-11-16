@@ -61,8 +61,13 @@ export default function BulkImportModal({
       if (!user) return;
       try {
         const token = await user.getIdToken();
-        const res = await fetch('/api/niches', {
-          headers: { Authorization: `Bearer ${token}` },
+        const orgIdToUse = currentOrg?.id || (typeof window !== 'undefined' ? localStorage.getItem('myp_active_org_id') : null);
+        const orgParam = orgIdToUse ? `?org_id=${orgIdToUse}` : '';
+        const res = await fetch(`/api/niches${orgParam}`, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            ...(orgIdToUse ? { 'x-org-id': orgIdToUse } : {})
+          },
         });
         if (res.ok) {
           const list = await res.json();
@@ -81,7 +86,7 @@ export default function BulkImportModal({
       setErrorMsg('');
       setSuccessCount(null);
     }
-  }, [user, isOpen, initialNicheId]);
+  }, [user, isOpen, initialNicheId, currentOrg?.id]);
 
   // Run parser whenever rawText changes
   useEffect(() => {
